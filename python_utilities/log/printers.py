@@ -1,4 +1,3 @@
-import sys
 import python_utilities.file.utilities as ut
 
 
