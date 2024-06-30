@@ -22,8 +22,23 @@ class Logger:
         self.__do_short_location = do_short_location
         self.__prepare_logger()
 
-    def get_num_types(self):
-        return len(self.__types)
+    def get_prohibited_names(self):
+        return self.__prohibited_names.copy()
+
+    # Make the printer that will be added to the Logger instance
+    def __make_printer(self, name, use):
+        def logger(string):
+            if use and self.__printer is not None:
+                preamble = Logger.__create_preamble(
+                    name=name,
+                    do_type=self.__do_type,
+                    do_timestamp=self.__do_timestamp,
+                    do_location=self.__do_location,
+                    do_short_location=self.__do_short_location
+                )
+                # Use the provided printer to log the result
+                self.__printer(preamble + string)
+        return logger
 
     def __add_type(self, name, active, check_prohibited=True, check_override=True):
         # Ignore attempts to use a prohibited name
@@ -42,21 +57,6 @@ class Logger:
         # For each of the types...
         for key, value in self.__types.items():
             self.__add_type(key, value)
-
-    # Make the printer that will be added to the Logger instance
-    def __make_printer(self, name, use):
-        def logger(string):
-            if use and self.__printer is not None:
-                preamble = Logger.__create_preamble(
-                    name=name,
-                    do_type=self.__do_type,
-                    do_timestamp=self.__do_timestamp,
-                    do_location=self.__do_location,
-                    do_short_location=self.__do_short_location
-                )
-                # Use the provided printer to log the result
-                self.__printer(preamble + string)
-        return logger
 
     # Create a log preamble
     @staticmethod
@@ -172,8 +172,13 @@ class Logger:
         def __getattr__(self, name):
             # If the proxied class does not have the attribute, return a default attribute
             if not hasattr(self.__proxied, name):
-                Logger.log(f"WARNING: the logger \"{name}\" does not exist", log_type="warning")
-                return lambda string: Logger.default_print(f"Missing \"{name}\" log message: {string}")
+                if name not in self.__proxied.get_prohibited_names():
+                    def printer(string):
+                        print("*", end="")
+                        Logger.log(string, self, name)
+
+                    return printer
+                return lambda string: Logger.default_print(f"Prohibited logger name ({name}) for message: {string}")
             # If the proxied class does have the attribute, return it
             return getattr(self.__proxied, name)
 
