@@ -9,6 +9,10 @@ def make_console_printer():
 
 def make_file_printer(filename, clear, max_size=None, backup_suffix=".backup"):
     backup_filename = filename + backup_suffix
+
+    if not ut.target_exists(filename):
+        ut.create_file(filename, "")
+
     if clear:
         ut.clear_file(filename)
         if ut.target_exists(filename + backup_suffix):

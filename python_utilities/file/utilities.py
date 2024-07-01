@@ -5,9 +5,13 @@ import shutil
 __print = print
 
 
-def clear_file(filename):
+def create_file(filename, string):
     with open(filename, "w") as f:
-        f.write("")
+        f.write(string)
+
+
+def clear_file(filename):
+    create_file(filename, "")
 
 
 def target_exists(target):

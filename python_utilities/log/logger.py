@@ -29,13 +29,7 @@ class Logger:
     def __make_printer(self, name, use):
         def logger(string):
             if use and self.__printer is not None:
-                preamble = Logger.__create_preamble(
-                    name=name,
-                    do_type=self.__do_type,
-                    do_timestamp=self.__do_timestamp,
-                    do_location=self.__do_location,
-                    do_short_location=self.__do_short_location
-                )
+                preamble = self.__create_preamble_from_self(name)
                 # Use the provided printer to log the result
                 self.__printer(preamble + string)
         return logger
@@ -75,6 +69,15 @@ class Logger:
         if do_timestamp or do_location:
             result += ": "
         return result
+
+    def __create_preamble_from_self(self, name):
+        return Logger.__create_preamble(
+            name=name,
+            do_type=self.__do_type,
+            do_timestamp=self.__do_timestamp,
+            do_location=self.__do_location,
+            do_short_location=self.__do_short_location
+        )
 
     # Get a named tuple containing the stack's info
     @staticmethod
@@ -127,13 +130,14 @@ class Logger:
     # Allows for logger usage where a logger instance may not be available
     @staticmethod
     def __log(message, logger=None, log_type=None):
-        preamble = Logger.__create_preamble(name=log_type, do_type=True, do_timestamp=True, do_location=True)
         if logger is None or log_type is None:
+            preamble = Logger.__create_preamble(name=log_type, do_type=True, do_timestamp=True, do_location=True)
             Logger.default_print(preamble + message)
             return
         logger_func = logger[log_type]
         if logger_func is None:
-            Logger.default_print(preamble + message)
+            preamble = logger.__create_preamble_from_self(log_type)
+            logger.__printer("*" + preamble + message)
             return
         logger_func(message)
 
@@ -174,7 +178,6 @@ class Logger:
             if not hasattr(self.__proxied, name):
                 if name not in self.__proxied.get_prohibited_names():
                     def printer(string):
-                        print("*", end="")
                         Logger.log(string, self, name)
 
                     return printer
