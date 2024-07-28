@@ -94,7 +94,7 @@ class Logger:
     @staticmethod
     def __frame_info_to_string(frame, do_short_location):
         if frame is None:
-            return "frame unavaliable"
+            return None
         location = frame.filename.replace("\\", "/")
         if do_short_location:
             location = Logger.__path_to_filename(location)
