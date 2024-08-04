@@ -2,8 +2,8 @@ import python_utilities.file.utilities as ut
 
 
 def make_console_printer():
-    def printer(string):
-        print(string)
+    def printer(string, do_newline=True):
+        print(string, end=("\n" if do_newline else ""))
     return printer
 
 
@@ -18,13 +18,16 @@ def make_file_printer(filename, clear, max_size=None, backup_suffix=".backup"):
         if ut.target_exists(filename + backup_suffix):
             ut.delete_file(backup_filename)
 
-    def printer(string):
+    def printer(string, do_newline=True):
         if max_size is not None and ut.get_file_size(filename) >= max_size:
             ut.copy_file(filename, backup_filename)
             ut.clear_file(filename)
 
         with open(filename, "a") as f:
-            f.write(string + "\n")
+            try:
+                f.write(string + ("\n" if do_newline else ""))
+            except UnicodeEncodeError as e:
+                f.write("PRINTER ERROR: Cannot write string\n")
     return printer
 
 
@@ -32,9 +35,9 @@ def make_combined_printer(filename, clear, max_file_size):
     console_printer = make_console_printer()
     file_printer = make_file_printer(filename, clear, max_file_size)
 
-    def printer(string):
-        console_printer(string)
-        file_printer(string)
+    def printer(string, do_newline=True):
+        console_printer(string, do_newline)
+        file_printer(string, do_newline)
     return printer
 
 

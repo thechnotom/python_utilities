@@ -4,7 +4,7 @@ import inspect
 
 class Logger:
 
-    __prohibited_names = ["logger", "generic"]
+    __prohibited_names = ["logger", "generic", "in_prompt", "in_received"]
     default_print = print
 
     def __new__(cls, *args, **kargs):
@@ -13,13 +13,15 @@ class Logger:
         logger.__init__(*args, **kargs)
         return Logger.Proxy(logger)
 
-    def __init__(self, types, printer=None, do_timestamp=False, do_type=False, do_location=False, do_short_location=False):
-        self.__types = [] if types is None else types
+    def __init__(self, types=None, printer=None, do_timestamp=False, do_type=False, do_location=False, do_short_location=False, do_type_missing_indicator=True):
+        self.__types = {} if types is None else types
         self.__printer = printer
         self.__do_timestamp = do_timestamp
         self.__do_type = do_type
         self.__do_location = do_location
         self.__do_short_location = do_short_location
+        self.__do_type_missing_indicator = do_type_missing_indicator
+        self.input = self.__input_instance
         self.__prepare_logger()
 
     def get_prohibited_names(self):
@@ -27,11 +29,11 @@ class Logger:
 
     # Make the printer that will be added to the Logger instance
     def __make_printer(self, name, use):
-        def logger(string):
+        def logger(string, *args, **kwargs):
             if use and self.__printer is not None:
                 preamble = self.__create_preamble_from_self(name)
                 # Use the provided printer to log the result
-                self.__printer(preamble + string)
+                self.__printer(preamble + string, *args, **kwargs)
         return logger
 
     def __add_type(self, name, active, check_prohibited=True, check_override=True):
@@ -129,7 +131,7 @@ class Logger:
 
     # Allows for logger usage where a logger instance may not be available
     @staticmethod
-    def __log(message, logger=None, log_type=None):
+    def __log(message, logger=None, log_type=None, do_type_missing_indicator=True, *args, **kwargs):
         if logger is None or log_type is None:
             preamble = Logger.__create_preamble(name=log_type, do_type=True, do_timestamp=True, do_location=True)
             Logger.default_print(preamble + message)
@@ -137,9 +139,10 @@ class Logger:
         logger_func = logger[log_type]
         if logger_func is None:
             preamble = logger.__create_preamble_from_self(log_type)
-            logger.__printer("*" + preamble + message)
+            type_missing_indicator = ("*" if (logger.__do_type_missing_indicator and do_type_missing_indicator) else "")
+            logger.__printer(type_missing_indicator + preamble + message, *args, **kwargs)
             return
-        logger_func(message)
+        logger_func(message, *args, **kwargs)
 
     # Blocks off prohibited loggers
     @staticmethod
@@ -155,6 +158,23 @@ class Logger:
     def __ilog(message):
         Logger.__log(message, logger=None, log_type="logger")
 
+    # Logged input
+    @staticmethod
+    def input(prompt, logger=None):
+        return Logger.__input(prompt, logger)
+
+    # Instance replacement for static equivalent
+    def __input_instance(self, prompt):
+        return Logger.__input(prompt, self)
+
+    # Logged input
+    @staticmethod
+    def __input(prompt, logger=None):
+        Logger.__log(prompt, logger=logger, log_type="in_prompt", do_type_missing_indicator=False)
+        result = input("> ")
+        Logger.__log(f"> {result}", logger=logger, log_type="in_received", do_type_missing_indicator=False)
+        return result
+
     @staticmethod
     def make_generic_logger():
         logger = Logger({}, Logger.default_print, True, False, True, True)
@@ -164,7 +184,6 @@ class Logger:
     @staticmethod
     def silence_static_logging():
         Logger.default_print = (lambda string: None)
-
 
     # Proxy to intercept calls made to the Logger object
     # Proxy is returned when attempting to instantiate Logger and passes calls onto the "proxied" instance
