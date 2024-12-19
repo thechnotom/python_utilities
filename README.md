@@ -4,16 +4,18 @@ A module containing a variety of utilities for Python development.
 # Important Notes
 Be sure to include the directory containing this module in your PYTHONPATH.
 Modules in the package refer to other modules in the package, so it relies
-on this to be able to access the necessary functionality.
+on this to be able to access the necessary functionality. Specifically,
+the <code>log.printers</code> module makes use of the <code>file.utilities</code>
+module.
 
 # Versions and Requirements
 Development was conducted with recent versions of Python 3. The package is
-guarenteed to work as expected with a Python 3.12 installation. Development
+guaranteed to work as expected with a Python 3.12 installation. Development
 was done on a Windows 11 machine, but realistically it'll work on any OS.
 This is Python, not C.
 
 There are no external libraries used in this module. Any imports (with the
-of self-use) come packaged with a standard Python 3 installation.
+exception of self-use) come packaged with a standard Python 3 installation.
 
 # Documentation
 See each module to see what is included in each module. I'm far to lazy
