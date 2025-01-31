@@ -18,14 +18,16 @@ class Tesseract:
         try:
             image = Image.open(filename)
         except FileNotFoundError as e:
+            print("Could not find file for Image object", file=sys.stderr)
             return None
 
         try:
             return pytesseract.image_to_string(image)
         except FileNotFoundError as e:
+            print("Could not find file for text extraction", file=sys.stderr)
             return None
         except pytesseract.pytesseract.TesseractNotFoundError as e:
-            print("Ensure Tesseract is on your path")
+            print("Ensure Tesseract is on your path", file=sys.stderr)
             return None
         
         return None
