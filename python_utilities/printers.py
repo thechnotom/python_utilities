@@ -1,4 +1,4 @@
-import python_utilities.file.utilities as ut
+import python_utilities.utilities as ut
 
 
 def make_console_printer():
