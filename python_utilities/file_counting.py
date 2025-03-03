@@ -13,6 +13,23 @@ class Components:
     count = None
     post_count = ""
 
+    def __init__(self, pre_count="", count_str="", post_count=""):
+        self.pre_count = pre_count
+        self.count_str = count_str
+        self.post_count = post_count
+
+    @staticmethod
+    def from_src_and_count(src, count):
+        result = Components
+        if Utilities.is_file(source_name):
+            result.pre_count = files.remove_extension(Utilities.path_to_leaf(source_name))
+        else:
+            result.pre_count = files.path_to_leaf(source_name)
+        result.count_str = str(backup_suffix)
+        if files.is_file(source_name):
+            result.post_count = f".{files.get_extension(source_name)}"
+        return result
+
     def compose(self):
         return f"{self.pre_count}{self.count_str}{self.post_count}"
 
@@ -114,8 +131,16 @@ def is_backup(source_name, backup_name):
     return files.path_to_leaf(source_name) == f"{body}"
 
 
-def get_relevant_backup_names(backup_names):
+def get_relevant_backup_names(src, backup_names):
     RelevantBackupNames = namedtuple("RelevantBackupNames", ["first", "last", "next"])
+
+    if len(backup_names) < 1:
+        return RelevantBackupNames(
+            None,
+            None,
+            Components.from_src_and_count(src, 0).compose()
+        )
+
     return RelevantBackupNames(
         get_first(backup_names),
         get_last(backup_names),
