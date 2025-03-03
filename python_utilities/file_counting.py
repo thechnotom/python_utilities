@@ -1,5 +1,9 @@
 # Utilities for counting files
 
+from files import is_file_from_filename, get_extension, remove_extension, path_to_leaf, get_all_items
+from collections import namedtuple
+
+
 DELIMITER = "_"
 
 
@@ -90,10 +94,30 @@ def get_next(strings):
     return compose(temp)
 
 
-filenames = ["test_12.txt", "test_03.txt", "test_56.txt"]
-temp = get_first(filenames)
-print(temp)
-temp = get_last(filenames)
-print(temp)
-temp = get_next(filenames)
-print(temp)
+def get_backup_names(source_name, backup_directory):
+    items = get_all_items(backup_directory)
+    if items is None:
+        return None
+    return [x for x in items if is_backup(source_name, x)]
+
+
+def is_backup(source_name, backup_name):
+    body = backup_name
+    if is_file_from_filename(source_name):
+        body = remove_extension(backup_name)
+    delimiter_index = body.rfind(DELIMITER)
+    if delimiter_index < 0:
+        return False
+    body = body[:delimiter_index]
+    if is_file_from_filename(source_name):
+        return path_to_leaf(source_name) == f"{body}.{get_extension(backup_name)}"
+    return path_to_leaf(source_name) == f"{body}"
+
+
+def get_relevant_backup_names(backup_names):
+    RelevantBackupNames = namedtuple("RelevantBackupNames", ["first", "last", "next"])
+    return RelevantBackupNames(
+        get_first(backup_names),
+        get_last(backup_names),
+        get_next(backup_names)
+    )
