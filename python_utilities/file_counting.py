@@ -25,6 +25,7 @@ class Components:
             result.pre_count = files.remove_extension(files.path_to_leaf(source_name))
         else:
             result.pre_count = files.path_to_leaf(source_name)
+        result.pre_count = f"{result.pre_count}{DELIMITER}"
         result.count_str = str(count)
         if files.is_file_from_filename(source_name):
             result.post_count = f".{files.get_extension(source_name)}"
