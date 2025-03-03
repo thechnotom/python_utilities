@@ -19,13 +19,13 @@ class Components:
         self.post_count = post_count
 
     @staticmethod
-    def from_src_and_count(src, count):
+    def from_src_and_count(source_name, count):
         result = Components()
         if files.is_file_from_filename(source_name):
             result.pre_count = files.remove_extension(files.path_to_leaf(source_name))
         else:
             result.pre_count = files.path_to_leaf(source_name)
-        result.count_str = str(backup_suffix)
+        result.count_str = str(count)
         if files.is_file_from_filename(source_name):
             result.post_count = f".{files.get_extension(source_name)}"
         return result
