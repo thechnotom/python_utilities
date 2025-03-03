@@ -1,6 +1,6 @@
 import os
 import shutil
-from python_utilities.logger import Logger
+from . import logger
 
 
 def create_file(filename, string):
@@ -21,8 +21,8 @@ def delete_file(filename, logger=None):
         os.remove(filename)
         return True
     except Exception as e:
-        Logger.log(f"Failed to delete file \"{filename}\"", logger, "operation")
-        Logger.log(f"Exception: {str(e)}", logger, "error")
+        logger.Logger.log(f"Failed to delete file \"{filename}\"", logger, "operation")
+        logger.Logger.log(f"Exception: {str(e)}", logger, "error")
     return False
 
 
@@ -55,7 +55,7 @@ def get_directory_size(target):
 
 def copy(source, destination, max_use_of_free_space=1, logger=None):
     if not target_exists(source):
-        Logger.log(f"Source \"{source}\" does not exist", logger, "error")
+        logger.Logger.log(f"Source \"{source}\" does not exist", logger, "error")
         return False
 
     disk_check_dest = destination
@@ -65,15 +65,15 @@ def copy(source, destination, max_use_of_free_space=1, logger=None):
     space_allowance = shutil.disk_usage(disk_check_dest).free * max_use_of_free_space
 
     if os.path.isfile(source):
-        Logger.log(f"Copying source file \"{source}\" to \"{destination}\"", logger, "operation")
+        logger.Logger.log(f"Copying source file \"{source}\" to \"{destination}\"", logger, "operation")
         if get_file_size(source) > space_allowance:
-            Logger.log(f"Source file \"{source}\" is too large to copy to \"{destination}\"")
+            logger.Logger.log(f"Source file \"{source}\" is too large to copy to \"{destination}\"")
             return False
         return copy_file(source, destination, logger)
     else:
-        Logger.log(f"Copying source directory \"{source}\" to \"{destination}\"", logger, "operation")
+        logger.Logger.log(f"Copying source directory \"{source}\" to \"{destination}\"", logger, "operation")
         if get_directory_size(source) > space_allowance:
-            Logger.log(f"Source directory \"{source}\" is too large to copy to \"{destination}\"")
+            logger.Logger.log(f"Source directory \"{source}\" is too large to copy to \"{destination}\"")
             return False
         return copy_dir(source, destination, logger)
 
@@ -83,13 +83,13 @@ def copy_file(source, destination, logger=None):
         shutil.copy2(source, destination)
         return True
     except IOError as e:
-        Logger.log(f"Error copying \"{source}\" to \"{destination}\"", logger, "operation")
-        Logger.log(f"IOError: {str(e)}", logger, "error")
+        logger.Logger.log(f"Error copying \"{source}\" to \"{destination}\"", logger, "operation")
+        logger.Logger.log(f"IOError: {str(e)}", logger, "error")
     except shutil.SameFileError as e:
-        Logger.log(f"Same file error", logger, "operation")
+        logger.Logger.log(f"Same file error", logger, "operation")
     except Exception as e:
-        Logger.log(f"Unknown error copying \"{source}\" to \"{destination}\"", logger, "operation")
-        Logger.log(f"Exception: {str(e)}", logger, "error")
+        logger.Logger.log(f"Unknown error copying \"{source}\" to \"{destination}\"", logger, "operation")
+        logger.Logger.log(f"Exception: {str(e)}", logger, "error")
     return False
 
 
@@ -98,11 +98,11 @@ def copy_dir(source, destination, logger=None):
         shutil.copytree(source, destination)
         return True
     except FileExistsError as e:
-        Logger.log(f"File in directory already exists while copying \"{source}\" to \"{destination}\"", logger, "error")
-        Logger.log(f"FileExistsError: {str(e)}", logger, "error")
+        logger.Logger.log(f"File in directory already exists while copying \"{source}\" to \"{destination}\"", logger, "error")
+        logger.Logger.log(f"FileExistsError: {str(e)}", logger, "error")
     except Exception as e:
-        Logger.log(f"Error copying \"{source}\" to \"{destination}\"", logger, "error")
-        Logger.log(f"Exception: {str(e)}", logger, "error")
+        logger.Logger.log(f"Error copying \"{source}\" to \"{destination}\"", logger, "error")
+        logger.Logger.log(f"Exception: {str(e)}", logger, "error")
     return False
 
 
@@ -133,8 +133,8 @@ def delete_file(filename, logger=None):
         os.remove(filename)
         return True
     except Exception as e:
-        Logger.log(f"Failed to delete file \"{filename}\"", logger, "operation")
-        Logger.log(f"Exception: {str(e)}", logger, "error")
+        logger.Logger.log(f"Failed to delete file \"{filename}\"", logger, "operation")
+        logger.Logger.log(f"Exception: {str(e)}", logger, "error")
         return False
 
 
@@ -143,8 +143,8 @@ def delete_dir(directory, logger=None):
         shutil.rmtree(directory)
         return True
     except Exception as e:
-        Logger.log(f"Failed to delete directory \"{directory}\"", logger, "operation")
-        Logger.log(f"Exception: {str(e)}", logger, "error")
+        logger.Logger.log(f"Failed to delete directory \"{directory}\"", logger, "operation")
+        logger.Logger.log(f"Exception: {str(e)}", logger, "error")
     return False
 
 
