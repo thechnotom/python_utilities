@@ -21,8 +21,8 @@ class Components:
     @staticmethod
     def from_src_and_count(src, count):
         result = Components
-        if Utilities.is_file(source_name):
-            result.pre_count = files.remove_extension(Utilities.path_to_leaf(source_name))
+        if files.is_file(source_name):
+            result.pre_count = files.remove_extension(files.path_to_leaf(source_name))
         else:
             result.pre_count = files.path_to_leaf(source_name)
         result.count_str = str(backup_suffix)
