@@ -35,12 +35,8 @@ class Components:
         return f"{self.pre_count}{self.count_str}{self.post_count}"
 
     def __change_count(self, function):
-        lead_chars = ""
-        for char in self.count_str:
-            if char == "0":
-                lead_chars += char
         self.count = function(self.count)
-        self.count_str = f"{lead_chars}{self.count}"
+        self.count_str = f"{self.count}"
 
     def increment(self):
         self.__change_count(lambda x: x + 1)
@@ -132,18 +128,18 @@ def is_backup(source_name, backup_name):
     return files.path_to_leaf(source_name) == f"{body}"
 
 
-def get_relevant_backup_names(src, backup_names):
+def get_relevant_backup_names(src, backup_names, backup_dir):
     RelevantBackupNames = namedtuple("RelevantBackupNames", ["first", "last", "next"])
 
     if len(backup_names) < 1:
         return RelevantBackupNames(
             None,
             None,
-            Components.from_src_and_count(src, 0).compose()
+            f"{backup_dir}/{Components.from_src_and_count(src, 0).compose()}"
         )
 
     return RelevantBackupNames(
-        get_first(backup_names),
-        get_last(backup_names),
-        get_next(backup_names)
+        f"{backup_dir}/{get_first(backup_names)}",
+        f"{backup_dir}/{get_last(backup_names)}",
+        f"{backup_dir}/{get_next(backup_names)}"
     )
