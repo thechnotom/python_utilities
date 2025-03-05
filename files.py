@@ -3,6 +3,16 @@ import shutil
 from . import logger as lg
 
 
+def import_json(filename):
+    lines = None
+    try:
+        with open(filename, "r") as f:
+            lines = f.readlines()
+    except FileNotFoundError as e:
+        return None
+    return json.loads("".join(lines))
+
+
 def create_file(filename, string):
     with open(filename, "w") as f:
         f.write(string)
