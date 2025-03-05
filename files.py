@@ -168,3 +168,16 @@ def get_timestamp(target, logger=None):
         return os.path.getmtime(target)
     except OSError as e:
         return None
+
+
+def get_mod_time(filename):
+    latest = float("-inf")
+    for root, dirs, files in os.walk(filename):
+        root_m_time = get_timestamp(root)
+        if root_m_time > latest:
+            latest = root_m_time
+        for file in files:
+            file_m_time = get_timestamp(f"{root}/{file}")
+            if file_m_time > latest:
+                latest = file_m_time
+    return latest
