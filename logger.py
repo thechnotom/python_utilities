@@ -311,7 +311,7 @@ class Printers:
         if not do_logging:
             return None
         elif do_console_logging and do_file_logging:
-            return make_combined_printer(output_filename, clear_log_file, max_file_size)
+            return Printer.make_combined_printer(output_filename, clear_log_file, max_file_size)
         elif do_console_logging:
             return Printers.make_console_printer()
         elif do_file_logging:
