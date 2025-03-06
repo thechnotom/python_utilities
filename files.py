@@ -171,7 +171,7 @@ def get_timestamp(target, logger=None):
         return None
 
 
-def get_mod_time(filename):
+def get_mod_time_dir(filename):
     latest = float("-inf")
     for root, dirs, files in os.walk(filename):
         root_m_time = get_timestamp(root)
@@ -182,3 +182,12 @@ def get_mod_time(filename):
             if file_m_time > latest:
                 latest = file_m_time
     return latest
+
+
+def get_mod_time(target):
+    if not target_exists(target):
+        return float("-inf")
+    if os.path.isfile(target):
+        return get_timestamp(target)
+    else:
+        return get_mod_time_dir(target)
