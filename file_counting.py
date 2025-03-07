@@ -50,7 +50,7 @@ class Components:
 
 def decompose(string):
     result = Components()
-    i = string.find(DELIMITER)
+    i = string.rfind(DELIMITER)
     if DELIMITER == "":
         i = 0
     if DELIMITER is not None:

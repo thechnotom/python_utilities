@@ -1,11 +1,13 @@
 import time
 import inspect
 from . import files
+from . import file_counting as fc
 
 
 class Logger:
 
-    __prohibited_names = ["logger", "generic", "in_prompt", "in_received"]
+    __universal_logger_name = "_"
+    __prohibited_names = ["logger", "generic", "in_prompt", "in_received", __universal_logger_name]
     default_print = print
 
 
@@ -26,6 +28,7 @@ class Logger:
         self.__do_type_missing_indicator = do_type_missing_indicator
         self.input = self.__input_instance
         self.__prepare_logger()
+        self.__add_type("_", True, False, True)  # universal logger
 
 
     def get_prohibited_names(self):
@@ -168,6 +171,8 @@ class Logger:
             Logger.__ilog(f"Cannot use prohibited logger name \"{log_type}\"")
             Logger.__ilog(f"Message: {message}")
             return
+        if log_type is None:
+            log_type = Logger.__universal_logger_name
         Logger.__log(message, logger=logger, log_type=log_type)
 
 
@@ -217,7 +222,8 @@ class Logger:
             settings["file"]["enable"],
             settings["file"]["clear"],
             settings["file"]["output_filename"],
-            settings["file"]["max_file_size"]
+            settings["file"]["max_file_size"],
+            settings["file"]["max_backups"]
         )
 
         return Logger(
@@ -271,21 +277,35 @@ class Printers:
 
 
     @staticmethod
-    def make_file_printer(filename, clear, max_size=None, backup_suffix=".backup"):
-        backup_filename = filename + backup_suffix
+    def make_file_printer(filename, clear, max_size=None, max_backups=1):
+        #backup_filename = filename + backup_suffix
+        log_dir = files.path_to_directory(filename)
 
         if not files.target_exists(filename):
             files.create_file(filename, "")
 
         if clear:
             files.clear_file(filename)
-            if files.target_exists(filename + backup_suffix):
-                files.delete_file(backup_filename)
+            for backup_filename in fc.get_backup_names(filename, log_dir):
+                backup_filename = f"{log_dir}/{backup_filename}"
+                if files.target_exists(backup_filename):
+                    files.delete_file(backup_filename)
 
         def printer(string, do_newline=True):
             if max_size is not None and files.get_file_size(filename) >= max_size:
-                files.copy_file(filename, backup_filename)
+                backup_log_filenames = fc.get_backup_names(filename, log_dir)
+                print(filename)
+                print(backup_log_filenames)
+                print(log_dir)
+                next_log_filename = fc.get_relevant_backup_names(filename, backup_log_filenames, log_dir).next
+                files.copy_file(filename, next_log_filename)
                 files.clear_file(filename)
+
+                while True:
+                    backup_log_filenames = fc.get_backup_names(filename, log_dir)
+                    if len(backup_log_filenames) <= max_backups or len(backup_log_filenames) == 0:
+                        break
+                    files.delete_file(fc.get_relevant_backup_names(filename, backup_log_filenames, log_dir).first)
 
             with open(filename, "a") as f:
                 try:
@@ -296,9 +316,9 @@ class Printers:
 
 
     @staticmethod
-    def make_combined_printer(filename, clear, max_file_size):
+    def make_combined_printer(filename, clear, max_file_size, max_backups):
         console_printer = Printers.make_console_printer()
-        file_printer = Printers.make_file_printer(filename, clear, max_file_size)
+        file_printer = Printers.make_file_printer(filename, clear, max_file_size, max_backups)
 
         def printer(string, do_newline=True):
             console_printer(string, do_newline)
@@ -307,13 +327,13 @@ class Printers:
 
 
     @staticmethod
-    def select_printer(do_logging, do_console_logging, do_file_logging, clear_log_file, output_filename, max_file_size):
+    def select_printer(do_logging, do_console_logging, do_file_logging, clear_log_file, output_filename, max_file_size, max_backups):
         if not do_logging:
             return None
         elif do_console_logging and do_file_logging:
-            return Printers.make_combined_printer(output_filename, clear_log_file, max_file_size)
+            return Printers.make_combined_printer(output_filename, clear_log_file, max_file_size, max_backups)
         elif do_console_logging:
             return Printers.make_console_printer()
         elif do_file_logging:
-            return Printers.make_file_printer(output_filename, clear_log_file, max_file_size)
+            return Printers.make_file_printer(output_filename, clear_log_file, max_file_size, max_backups)
         return None
