@@ -294,9 +294,6 @@ class Printers:
         def printer(string, do_newline=True):
             if max_size is not None and files.get_file_size(filename) >= max_size:
                 backup_log_filenames = fc.get_backup_names(filename, log_dir)
-                print(filename)
-                print(backup_log_filenames)
-                print(log_dir)
                 next_log_filename = fc.get_relevant_backup_names(filename, backup_log_filenames, log_dir).next
                 files.copy_file(filename, next_log_filename)
                 files.clear_file(filename)
