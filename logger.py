@@ -18,7 +18,7 @@ class Logger:
         return Logger.Proxy(logger)
 
 
-    def __init__(self, types=None, printer=None, do_timestamp=False, do_type=False, do_location=False, do_short_location=False, do_type_missing_indicator=True):
+    def __init__(self, types=None, printer=None, do_timestamp=False, do_type=False, do_location=False, do_short_location=False, do_type_missing_indicator=True, strict_types=False):
         self.__types = {} if types is None else types
         self.__printer = printer
         self.__do_timestamp = do_timestamp
@@ -26,9 +26,10 @@ class Logger:
         self.__do_location = do_location
         self.__do_short_location = do_short_location
         self.__do_type_missing_indicator = do_type_missing_indicator
+        self.__strict_types = strict_types
         self.input = self.__input_instance
         self.__prepare_logger()
-        self.__add_type("_", True, False, True)  # universal logger
+        self.__add_type(Logger.__universal_logger_name, True, False, True)  # universal logger
 
 
     def get_prohibited_names(self):
@@ -157,6 +158,8 @@ class Logger:
             return
         logger_func = logger[log_type]
         if logger_func is None:
+            if logger.__strict_types:
+                return
             preamble = logger.__create_preamble_from_self(log_type)
             type_missing_indicator = ("*" if (logger.__do_type_missing_indicator and do_type_missing_indicator) else "")
             logger.__printer(type_missing_indicator + preamble + message, *args, **kwargs)
@@ -232,7 +235,9 @@ class Logger:
             do_timestamp=settings["do_timestamp"],
             do_type=settings["do_type"],
             do_location=settings["do_location"],
-            do_short_location=settings["do_short_location"]
+            do_short_location=settings["do_short_location"],
+            do_type_missing_indicator=settings["do_type_missing_indicator"],
+            strict_types=settings["strict_types"]
         )
 
 
