@@ -247,11 +247,6 @@ class Logger:
 
 
     @staticmethod
-    def silence_static_logging():
-        Logger.default_print = (lambda string: None)
-
-
-    @staticmethod
     def from_settings_dict(settings):
         printer = Printers.select_printer(
             settings["do_logging"],
