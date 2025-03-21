@@ -23,23 +23,15 @@ and forgetful to both write it all here *and* remember to keep this updated.
 
 ---
 
-## <code>*python_utilities.*__file__</code>
+## <code>*python_utilities.*__files__</code>
 Contains utilities related to file management and manipulation.
 
-### <code>*python_utilities.file.*__file_counting__</code>
+## <code>*python_utilities.*__file_counting__</code>
 Count the files in a directory. Useful for creating backups.
 Using the names of the files in the specified directory, utilities in the
 module can determine the next file name.
 
-### <code>*python_utilities.file.*__utilities__</code>
-General file utilities.
-
----
-
-## <code>*python_utilities.*__log__</code>
-Contains utilities related to logging.
-
-### <code>*python_utilities.log.*__logger__</code>
+## <code>*python_utilities.*__logger__</code>
 The primary logger. Instantiate a generic (and limitted) logger with
 `Logger.make_generic_logger`. The resulting instance can be treated like
 a method which takes a single string as an argument.
@@ -50,10 +42,6 @@ More complex loggers require further set up. Create an instance of the
 and a boolean (whether or not that type is active). The `printer` argument
 must be a function that takes a single string (the message being logged)
 as an argument and does the desired action with that string.
-
-### <code>*python_utilities.log.*__printers__</code>
-A small repository of printer-generating functions. The returns of these
-functions can be used as the `printer` argument of the `Logger` constructor.
 
 ---
 

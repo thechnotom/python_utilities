@@ -250,14 +250,18 @@ class Logger:
 
 
         def __getattr__(self, name):
+            # Check if the logger name is prohibitted
+            if name in self.__proxied.get_prohibited_names():
+                raise LoggerExceptions.ProhibittedLoggerTypeException(f"Prohibitted logger type: {name}", name)
+
             # If the proxied class does not have the attribute, return a default attribute
             if not hasattr(self.__proxied, name):
-                if name not in self.__proxied.get_prohibited_names():
-                    def printer(string):
-                        Logger.log(string, self, name)
 
-                    return printer
-                return lambda string: Logger.default_print(f"Prohibited logger name ({name}) for message: {string}")
+                def printer(string):
+                    Logger.log(string, self, name)
+
+                return printer
+
             # If the proxied class does have the attribute, return it
             return getattr(self.__proxied, name)
 
@@ -270,6 +274,15 @@ class Logger:
         def __call__(self, message):
             if hasattr(self.__proxied, "generic"):
                 self.__proxied.generic(message)
+
+
+class LoggerExceptions:
+
+    class ProhibittedLoggerTypeException(Exception):
+
+        def __init__(self, message, type_name):
+            super().__init__(message)
+            self.type_name = type_name
 
 
 class Printers:
