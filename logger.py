@@ -18,7 +18,31 @@ class Logger:
         return Logger.Proxy(logger)
 
 
-    def __init__(self, types=None, printer=None, do_timestamp=False, do_type=False, do_location=False, do_short_location=False, do_type_missing_indicator=True, strict_types=False):
+    # types: list of logger names
+    # printer: function used to print (must take at least a string as an argument)
+    # do_timestamp: whether to display the timestamp in the logged line
+    # do_type: whether to display the logger type in the logged line
+    # do_location: whether to display the log message's origin in the logged line
+    # do_short_location: whether to shorten the log message's origin in the logged line
+    # do_type_missing_indicator: whether to indicate that a message is from a missing log type in the logged line
+    # strict_types: whether to show messages that come from missing types
+    # do_unknown_type_exception: whether to raise an exception when missing log types are used
+    # do_override_type_exception: whether to raise an exception when an attempt to override and existing attribute is made
+    # do_prohibited_type_exception: whether to raise an exception when prohibited log types are used
+    def __init__(
+        self,
+        types=None,
+        printer=None,
+        do_timestamp=False,
+        do_type=False,
+        do_location=False,
+        do_short_location=False,
+        do_type_missing_indicator=True,
+        strict_types=False,
+        do_unknown_type_exception=False,
+        do_override_type_exception=False,
+        do_prohibited_type_exception=True
+    ):
         self.__types = {} if types is None else types
         self.__printer = printer
         self.__do_timestamp = do_timestamp
@@ -27,13 +51,21 @@ class Logger:
         self.__do_short_location = do_short_location
         self.__do_type_missing_indicator = do_type_missing_indicator
         self.__strict_types = strict_types
+        self.__do_unknown_type_exception = do_unknown_type_exception
+        self.__do_override_type_exception = do_override_type_exception
+        self.__do_prohibited_type_exception = do_prohibited_type_exception
         self.input = self.__input_instance
         self.__prepare_logger()
         self.__add_type(Logger.__universal_logger_name, True, False, True)  # universal logger
 
 
-    def get_prohibited_names(self):
-        return self.__prohibited_names.copy()
+    @staticmethod
+    def get_prohibited_names():
+        return Logger.__prohibited_names.copy()
+
+
+    def get_do_prohibited_type_exception(self):
+        return self.__do_prohibited_type_exception
 
 
     # Make the printer that will be added to the Logger instance
@@ -49,11 +81,13 @@ class Logger:
     def __add_type(self, name, active, check_prohibited=True, check_override=True):
         # Ignore attempts to use a prohibited name
         if check_prohibited and name in Logger.__prohibited_names:
-            Logger.__ilog(f"WARNING: an invalid logger name was given: {name}")
+            if self.__do_prohibited_type_exception:
+                raise LoggerExceptions.ProhibitedLoggerTypeException(f"Prohibited logger name was given: {name}", name)
             return
         # Ignore attempts to override existing properties
         if check_override and hasattr(self, name):
-            Logger.__ilog(f"WARNING: a logger name cannot override an existing attribute: {name}")
+            if self.__do_override_type_exception:
+                raise LoggerExceptions.OverrideLoggerTypeException(f"Cannot override an existing attribute: {name}", name)
             return
         # Add the logger to the Logger instance
         setattr(self, name, self.__make_printer(name, active))
@@ -158,6 +192,8 @@ class Logger:
             return
         logger_func = logger[log_type]
         if logger_func is None:
+            if logger.__do_unknown_type_exception:
+                raise LoggerExceptions.UnknownLoggerTypeException(f"Unknown logger type: {log_type}", log_type)
             if logger.__strict_types:
                 return
             preamble = logger.__create_preamble_from_self(log_type)
@@ -171,9 +207,7 @@ class Logger:
     @staticmethod
     def log(message, logger=None, log_type=None):
         if log_type in Logger.__prohibited_names:
-            Logger.__ilog(f"Cannot use prohibited logger name \"{log_type}\"")
-            Logger.__ilog(f"Message: {message}")
-            return
+            raise LoggerExceptions.ProhibitedLoggerTypeException(f"Prohibited logger name was given: {log_type}", log_type)
         if log_type is None:
             log_type = Logger.__universal_logger_name
         Logger.__log(message, logger=logger, log_type=log_type)
@@ -237,7 +271,10 @@ class Logger:
             do_location=settings["do_location"],
             do_short_location=settings["do_short_location"],
             do_type_missing_indicator=settings["do_type_missing_indicator"],
-            strict_types=settings["strict_types"]
+            strict_types=settings["strict_types"],
+            do_unknown_type_exception=settings["type_error_handling"]["do_unknown_type_exception"],
+            do_override_type_exception=settings["type_error_handling"]["do_override_type_exception"],
+            do_prohibited_type_exception=settings["type_error_handling"]["do_prohibited_type_exception"]
         )
 
 
@@ -250,9 +287,12 @@ class Logger:
 
 
         def __getattr__(self, name):
-            # Check if the logger name is prohibitted
-            if name in self.__proxied.get_prohibited_names():
-                raise LoggerExceptions.ProhibittedLoggerTypeException(f"Prohibitted logger type: {name}", name)
+            # Check if the logger name is prohibited
+            if name in Logger.get_prohibited_names():
+                if self.__proxied.get_do_prohibited_type_exception():
+                    raise LoggerExceptions.ProhibitedLoggerTypeException(f"Prohibited logger type: {name}", name)
+                else:
+                    return lambda string, *args, **kwargs: None
 
             # If the proxied class does not have the attribute, return a default attribute
             if not hasattr(self.__proxied, name):
@@ -278,11 +318,21 @@ class Logger:
 
 class LoggerExceptions:
 
-    class ProhibittedLoggerTypeException(Exception):
-
+    class LoggerTypeException(Exception):
         def __init__(self, message, type_name):
             super().__init__(message)
             self.type_name = type_name
+
+    class ProhibitedLoggerTypeException(LoggerTypeException):
+        pass
+
+
+    class UnknownLoggerTypeException(LoggerTypeException):
+        pass
+
+
+    class OverrideLoggerTypeException(LoggerTypeException):
+        pass
 
 
 class Printers:
