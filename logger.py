@@ -1,5 +1,6 @@
 import time
 import inspect
+import threading
 from . import files
 from . import file_counting as fc
 
@@ -37,10 +38,11 @@ class Logger:
         do_type=False,
         do_location=False,
         do_short_location=False,
+        do_thread_name=False,
         do_type_missing_indicator=True,
         strict_types=False,
         do_unknown_type_exception=False,
-        do_override_type_exception=False,
+        do_override_type_exception=True,
         do_prohibited_type_exception=True
     ):
         self.__types = {} if types is None else types
@@ -49,11 +51,13 @@ class Logger:
         self.__do_type = do_type
         self.__do_location = do_location
         self.__do_short_location = do_short_location
+        self.__do_thread_name = do_thread_name
         self.__do_type_missing_indicator = do_type_missing_indicator
         self.__strict_types = strict_types
         self.__do_unknown_type_exception = do_unknown_type_exception
         self.__do_override_type_exception = do_override_type_exception
         self.__do_prohibited_type_exception = do_prohibited_type_exception
+        self.__functions = {}
         self.input = self.__input_instance
         self.__prepare_logger()
         self.__add_type(Logger.__universal_logger_name, True, False, True)  # universal logger
@@ -90,7 +94,19 @@ class Logger:
                 raise LoggerExceptions.OverrideLoggerTypeException(f"Cannot override an existing attribute: {name}", name)
             return
         # Add the logger to the Logger instance
-        setattr(self, name, self.__make_printer(name, active))
+        self.__functions[name] = self.__make_printer(name, active)
+
+
+    @staticmethod
+    def __get_function(logger, name):
+        try:
+            return logger.__functions[name]
+        except KeyError as e:
+            return None
+
+
+    def __get_function_from_self(self, name):
+        return Logger.__get_function(self, name)
 
 
     # Prepare the Logger based on the provided configuration
@@ -102,7 +118,7 @@ class Logger:
 
     # Create a log preamble
     @staticmethod
-    def __create_preamble(name=None, do_type=False, do_timestamp=False, do_location=False, do_short_location=False):
+    def __create_preamble(name=None, do_type=False, do_timestamp=False, do_location=False, do_short_location=False, do_thread_name=False):
         # Add the type of log
         result = f"({name}) " if (do_type and name is not None) else ""
         # Add the timestamp
@@ -111,8 +127,16 @@ class Logger:
         if do_timestamp and do_location:
             result += " "
         # Add the location
+        if do_location or do_thread_name:
+            result += "["
         if do_location:
-            result += f"[{Logger.__get_caller_location(do_short_location)}]"
+            result += f"{Logger.__get_caller_location(do_short_location)}"
+        if do_location and do_thread_name:
+            result += " | "
+        if do_thread_name:
+            result += f"{Logger.__get_thread_name()}"
+        if do_location or do_thread_name:
+            result += "]"
         # If a timestamp or location is included, add a colon
         if do_timestamp or do_location:
             result += ": "
@@ -125,7 +149,8 @@ class Logger:
             do_type=self.__do_type,
             do_timestamp=self.__do_timestamp,
             do_location=self.__do_location,
-            do_short_location=self.__do_short_location
+            do_short_location=self.__do_short_location,
+            do_thread_name=self.__do_thread_name
         )
 
 
@@ -175,9 +200,16 @@ class Logger:
         return time.strftime("%Y-%m-%d %H:%M:%S")
 
 
+    @staticmethod
+    def __get_thread_name():
+        return threading.current_thread().name
+
+
     # Allow for log functions to be retrieved from the logger
     def __getitem__(self, key):
         try:
+            if (func := self.__get_function_from_self(key) is not None):
+                return func
             return getattr(self, key)
         except AttributeError:
             return None
@@ -187,10 +219,10 @@ class Logger:
     @staticmethod
     def __log(message, logger=None, log_type=None, do_type_missing_indicator=True, *args, **kwargs):
         if logger is None or log_type is None:
-            preamble = Logger.__create_preamble(name=log_type, do_type=True, do_timestamp=True, do_location=True)
+            preamble = Logger.__create_preamble(name=log_type, do_type=True, do_timestamp=True, do_location=True, do_thread_name=True)
             Logger.default_print(preamble + message)
             return
-        logger_func = logger[log_type]
+        logger_func = Logger.__get_function(logger, log_type)
         if logger_func is None:
             if logger.__do_unknown_type_exception:
                 raise LoggerExceptions.UnknownLoggerTypeException(f"Unknown logger type: {log_type}", log_type)
@@ -265,6 +297,7 @@ class Logger:
             do_type=settings["do_type"],
             do_location=settings["do_location"],
             do_short_location=settings["do_short_location"],
+            do_thread_name=settings["do_thread_name"],
             do_type_missing_indicator=settings["do_type_missing_indicator"],
             strict_types=settings["strict_types"],
             do_unknown_type_exception=settings["type_error_handling"]["do_unknown_type_exception"],
