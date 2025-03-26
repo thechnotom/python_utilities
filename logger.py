@@ -220,7 +220,7 @@ class Logger:
     def __log(message, logger=None, log_type=None, do_type_missing_indicator=True, *args, **kwargs):
         if logger is None or log_type is None:
             preamble = Logger.__create_preamble(name=log_type, do_type=True, do_timestamp=True, do_location=True, do_thread_name=True)
-            Logger.default_print(preamble + message)
+            Logger.default_print(preamble + message, *args, **kwargs)
             return
         logger_func = Logger.__get_function(logger, log_type)
         if logger_func is None:
@@ -237,12 +237,12 @@ class Logger:
 
     # Blocks off prohibited loggers
     @staticmethod
-    def log(message, logger=None, log_type=None):
+    def log(message, logger=None, log_type=None, *args, **kwargs):
         if log_type in Logger.__prohibited_names:
             raise LoggerExceptions.ProhibitedLoggerTypeException(f"Prohibited logger name was given: {log_type}", log_type)
         if log_type is None:
             log_type = Logger.__universal_logger_name
-        Logger.__log(message, logger=logger, log_type=log_type)
+        Logger.__log(message, logger=logger, log_type=log_type, *args, **kwargs)
 
 
     # Internal logger
@@ -264,10 +264,10 @@ class Logger:
 
     # Logged input
     @staticmethod
-    def __input(prompt, logger=None):
-        Logger.__log(prompt, logger=logger, log_type="in_prompt", do_type_missing_indicator=False)
+    def __input(prompt, logger=None, *args, **kwargs):
+        Logger.__log(prompt, logger=logger, log_type="in_prompt", do_type_missing_indicator=False, *args, **kwargs)
         result = input("> ")
-        Logger.__log(f"> {result}", logger=logger, log_type="in_received", do_type_missing_indicator=False)
+        Logger.__log(f"> {result}", logger=logger, log_type="in_received", do_type_missing_indicator=False, *args, **kwargs)
         return result
 
 
@@ -325,8 +325,8 @@ class Logger:
             # If the proxied class does not have the attribute, return a default attribute
             if not hasattr(self.__proxied, name):
 
-                def printer(string):
-                    Logger.log(string, self, name)
+                def printer(string, *args, **kwargs):
+                    Logger.log(string, self.__proxied, name, *args, **kwargs)
 
                 return printer
 
@@ -367,14 +367,13 @@ class Printers:
 
     @staticmethod
     def make_console_printer():
-        def printer(string, do_newline=True):
-            print(string, end=("\n" if do_newline else ""))
+        def printer(string, *args, **kwargs):
+            print(string, *args, **kwargs)
         return printer
 
 
     @staticmethod
     def make_file_printer(filename, clear, max_size=None, max_backups=1):
-        #backup_filename = filename + backup_suffix
         log_dir = files.path_to_directory(filename)
 
         if not files.target_exists(filename):
@@ -413,9 +412,9 @@ class Printers:
         console_printer = Printers.make_console_printer()
         file_printer = Printers.make_file_printer(filename, clear, max_file_size, max_backups)
 
-        def printer(string, do_newline=True):
-            console_printer(string, do_newline)
-            file_printer(string, do_newline)
+        def printer(string, do_file_newline=True, *args, **kwargs):
+            console_printer(string, *args, **kwargs)
+            file_printer(string, do_file_newline)
         return printer
 
 
