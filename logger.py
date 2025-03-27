@@ -245,6 +245,11 @@ class Logger:
         Logger.__log(message, logger=logger, log_type=log_type, *args, **kwargs)
 
 
+    @staticmethod
+    def make_log_function(message, logger=None, log_type=None, *args, **kwargs):
+        return lambda string: Logger.log(string, logger, log_type, *args, **kwargs)
+
+
     # Internal logger
     @staticmethod
     def __ilog(message):
