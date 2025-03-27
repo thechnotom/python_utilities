@@ -8,7 +8,8 @@ from . import file_counting as fc
 class Logger:
 
     __universal_logger_name = "_"
-    __prohibited_names = ["logger", "generic", "in_prompt", "in_received", __universal_logger_name]
+    __prohibited_functions = ["get_functions", "generic_logger"]
+    __prohibited_names = __prohibited_functions + ["logger", "generic", "in_prompt", "in_received", __universal_logger_name]
     default_print = print
 
 
@@ -66,6 +67,19 @@ class Logger:
     @staticmethod
     def get_prohibited_names():
         return Logger.__prohibited_names.copy()
+
+    @staticmethod
+    def get_prohibited_functions():
+        return Logger.__prohibited_functions.copy()
+
+
+    # Used by the Proxy object (which prohibits its use elsewhere)
+    def get_functions(self):
+        return self.__functions
+
+
+    def get_type_names(self):
+        return list(self.__functions.keys())
 
 
     def get_do_prohibited_type_exception(self):
@@ -283,6 +297,11 @@ class Logger:
         return logger
 
 
+    # Used by Proxy class (which blocks it from being used elsewhere)
+    def generic_logger(self, message, *args, **kwargs):
+        Logger.__log(message, self, "generic", *args, **kwargs)
+
+
     @staticmethod
     def from_settings_dict(settings):
         printer = Printers.select_printer(
@@ -320,6 +339,10 @@ class Logger:
 
 
         def __getattr__(self, name):
+            # Check if the function is meant only for the Proxy
+            if name in Logger.get_prohibited_functions():
+                raise LoggerExceptions.ProhibitedLoggerMethodException(f"Prohibited logger function: {name}", name)
+
             # Check if the logger name is prohibited
             if name in Logger.get_prohibited_names():
                 if self.__proxied.get_do_prohibited_type_exception():
@@ -328,15 +351,17 @@ class Logger:
                     return lambda string, *args, **kwargs: None
 
             # If the proxied class does not have the attribute, return a default attribute
-            if not hasattr(self.__proxied, name):
+            if name not in self.__proxied.get_type_names() and not hasattr(self.__proxied, name):
 
                 def printer(string, *args, **kwargs):
-                    Logger.log(string, self.__proxied, name, *args, **kwargs)
+                    Logger.log(string, self, name, *args, **kwargs)
 
                 return printer
 
             # If the proxied class does have the attribute, return it
-            return getattr(self.__proxied, name)
+            if hasattr(self.__proxied, name):
+                return getattr(self.__proxied, name)
+            return self.__proxied.get_functions()[name]
 
 
         # Pass subscripting to the proxied instance
@@ -344,27 +369,31 @@ class Logger:
             return self.__proxied[key]
 
 
-        def __call__(self, message):
-            if hasattr(self.__proxied, "generic"):
-                self.__proxied.generic(message)
+        def __call__(self, message, *args, **kwargs):
+            if "generic" in self.__proxied.get_type_names():
+                self.__proxied.generic_logger(message, *args, **kwargs)
 
 
 class LoggerExceptions:
 
-    class LoggerTypeException(Exception):
-        def __init__(self, message, type_name):
+    class LoggerNameException(Exception):
+        def __init__(self, message, name):
             super().__init__(message)
-            self.type_name = type_name
+            self.name = name
 
-    class ProhibitedLoggerTypeException(LoggerTypeException):
+    class ProhibitedLoggerTypeException(LoggerNameException):
         pass
 
 
-    class UnknownLoggerTypeException(LoggerTypeException):
+    class UnknownLoggerTypeException(LoggerNameException):
         pass
 
 
-    class OverrideLoggerTypeException(LoggerTypeException):
+    class OverrideLoggerTypeException(LoggerNameException):
+        pass
+
+
+    class ProhibitedLoggerMethodException(LoggerNameException):
         pass
 
 
