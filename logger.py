@@ -261,7 +261,7 @@ class Logger:
 
     @staticmethod
     def make_log_function(logger=None, log_type=None):
-        return lambda string: Logger.log(string, logger, log_type, *args, **kwargs)
+        return lambda string, *args, **kwargs: Logger.log(string, logger, log_type, *args, **kwargs)
 
 
     # Internal logger
