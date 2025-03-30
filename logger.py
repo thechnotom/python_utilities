@@ -26,6 +26,7 @@ class Logger:
     # do_type: whether to display the logger type in the logged line
     # do_location: whether to display the log message's origin in the logged line
     # do_short_location: whether to shorten the log message's origin in the logged line
+    # do_thread_name: whether to show the thread's name in the logged line
     # do_type_missing_indicator: whether to indicate that a message is from a missing log type in the logged line
     # strict_types: whether to show messages that come from missing types
     # do_unknown_type_exception: whether to raise an exception when missing log types are used
