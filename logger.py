@@ -108,6 +108,9 @@ class Logger:
             if self.__do_override_type_exception:
                 raise LoggerExceptions.OverrideLoggerTypeException(f"Cannot override an existing attribute: {name}", name)
             return False
+        # Add logger type to __types if it isn't already there
+        if name not in self.__types:
+            self.__types[name] = active
         # Add the logger to the Logger instance
         self.__functions[name] = self.__make_printer(name, active)
         return True
@@ -115,6 +118,16 @@ class Logger:
 
     def add_type(self, name, active):
         return self.__add_type(name, active, True, True)
+
+
+    def has_type(self, name):
+        return name in self.__functions
+
+
+    def is_type_active(self, name):
+        if name in self.__types:
+            return self.__types[name]
+        return False
 
 
     @staticmethod
