@@ -101,14 +101,19 @@ class Logger:
         if check_prohibited and name in Logger.__prohibited_names:
             if self.__do_prohibited_type_exception:
                 raise LoggerExceptions.ProhibitedLoggerTypeException(f"Prohibited logger name was given: {name}", name)
-            return
+            return False
         # Ignore attempts to override existing properties
-        if check_override and hasattr(self, name):
+        if check_override and (hasattr(self, name) or name in self.__functions):
             if self.__do_override_type_exception:
                 raise LoggerExceptions.OverrideLoggerTypeException(f"Cannot override an existing attribute: {name}", name)
-            return
+            return False
         # Add the logger to the Logger instance
         self.__functions[name] = self.__make_printer(name, active)
+        return True
+
+
+    def add_type(self, name, active):
+        return self.__add_type(name, active, True, True)
 
 
     @staticmethod
