@@ -28,7 +28,7 @@ class Logger:
     # do_short_location: whether to shorten the log message's origin in the logged line
     # do_thread_name: whether to show the thread's name in the logged line
     # do_type_missing_indicator: whether to indicate that a message is from a missing log type in the logged line
-    # strict_types: whether to show messages that come from missing types
+    # do_strict_types: whether to show messages that come from missing types
     # do_unknown_type_exception: whether to raise an exception when missing log types are used
     # do_override_type_exception: whether to raise an exception when an attempt to override and existing attribute is made
     # do_prohibited_type_exception: whether to raise an exception when prohibited log types are used
@@ -42,7 +42,7 @@ class Logger:
         do_short_location=False,
         do_thread_name=False,
         do_type_missing_indicator=True,
-        strict_types=False,
+        do_strict_types=False,
         do_unknown_type_exception=False,
         do_override_type_exception=True,
         do_prohibited_type_exception=True
@@ -55,7 +55,7 @@ class Logger:
         self.__do_short_location = do_short_location
         self.__do_thread_name = do_thread_name
         self.__do_type_missing_indicator = do_type_missing_indicator
-        self.__strict_types = strict_types
+        self.__do_strict_types = do_strict_types
         self.__do_unknown_type_exception = do_unknown_type_exception
         self.__do_override_type_exception = do_override_type_exception
         self.__do_prohibited_type_exception = do_prohibited_type_exception
@@ -259,7 +259,7 @@ class Logger:
         if logger_func is None:
             if logger.__do_unknown_type_exception:
                 raise LoggerExceptions.UnknownLoggerTypeException(f"Unknown logger type: {log_type}", log_type)
-            if logger.__strict_types:
+            if logger.__do_strict_types:
                 return
             preamble = logger.__create_preamble_from_self(log_type)
             type_missing_indicator = ("*" if (logger.__do_type_missing_indicator and do_type_missing_indicator) else "")
