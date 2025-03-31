@@ -342,7 +342,7 @@ class Logger:
             do_short_location=settings["do_short_location"],
             do_thread_name=settings["do_thread_name"],
             do_type_missing_indicator=settings["do_type_missing_indicator"],
-            strict_types=settings["strict_types"],
+            do_strict_types=settings["do_strict_types"],
             do_unknown_type_exception=settings["type_error_handling"]["do_unknown_type_exception"],
             do_override_type_exception=settings["type_error_handling"]["do_override_type_exception"],
             do_prohibited_type_exception=settings["type_error_handling"]["do_prohibited_type_exception"]
