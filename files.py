@@ -180,3 +180,10 @@ def get_mod_time(target):
         return get_timestamp(target)
     else:
         return get_mod_time_dir(target)
+
+
+def create_directory(directory):
+    if not target_exists(directory):
+        os.makedirs(directory)
+        return True
+    return False
