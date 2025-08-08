@@ -7,6 +7,9 @@ from collections import namedtuple
 DELIMITER = "_"
 
 
+RelevantBackupNames = namedtuple("RelevantBackupNames", ["first", "last", "next"])
+
+
 class Components:
     pre_count = ""
     count_str = ""
@@ -129,8 +132,6 @@ def is_backup(source_name, backup_name):
 
 
 def get_relevant_backup_names(src, backup_names, backup_dir):
-    RelevantBackupNames = namedtuple("RelevantBackupNames", ["first", "last", "next"])
-
     if len(backup_names) < 1:
         return RelevantBackupNames(
             None,
