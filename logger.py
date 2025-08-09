@@ -316,6 +316,12 @@ class Logger:
         return logger
 
 
+    @staticmethod
+    def make_silent_logger():
+        logger = Logger({}, lambda *args: None)
+        return logger
+
+
     # Used by Proxy class (which blocks it from being used elsewhere)
     def generic_logger(self, message, *args, **kwargs):
         Logger.__log(message, self, "generic", *args, **kwargs)
