@@ -111,11 +111,10 @@ def get_next(strings):
     return compose(temp)
 
 
-def get_backup_names(source_name, backup_directory):
-    items = files.get_all_items(backup_directory)
-    if items is None:
+def get_backup_names(source_name, all_backup_dir_content_names):
+    if all_backup_dir_content_names is None:
         return None
-    return [x for x in items if is_backup(source_name, x)]
+    return [x for x in all_backup_dir_content_names if is_backup(source_name, x)]
 
 
 def is_backup(source_name, backup_name):
