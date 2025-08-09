@@ -271,6 +271,8 @@ class Logger:
     # Blocks off prohibited loggers
     @staticmethod
     def log(message, logger=None, log_type=None, *args, **kwargs):
+        if logger is None:
+            return
         if log_type in Logger.__prohibited_names:
             raise LoggerExceptions.ProhibitedLoggerTypeException(f"Prohibited logger name was given: {log_type}", log_type)
         if log_type is None:
@@ -313,6 +315,12 @@ class Logger:
     def make_generic_logger():
         logger = Logger({}, Logger.default_print, True, False, True, True)
         logger.__add_type("generic", True, False, True)  # bypass prohibited name checking
+        return logger
+
+
+    @staticmethod
+    def make_silent_logger():
+        logger = Logger({}, lambda *args: None)
         return logger
 
 
