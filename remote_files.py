@@ -33,6 +33,10 @@ class ProcessSSH:
         self.last_accessed = self.__inst_last_accessed
 
 
+    def set_logger(logger):
+        self.logger = logger
+
+
     @staticmethod
     def __is_failure(string):
         for system, message in ProcessSSH.failureMessages.items():
