@@ -251,7 +251,9 @@ class Logger:
     # Allows for logger usage where a logger instance may not be available
     @staticmethod
     def __log(message, logger=None, log_type=None, do_type_missing_indicator=True, *args, **kwargs):
-        if logger is None or log_type is None:
+        if logger is None:
+            return
+        if log_type is None:
             preamble = Logger.__create_preamble(name=log_type, do_type=True, do_timestamp=True, do_location=True, do_thread_name=True)
             Logger.default_print(preamble + message, *args, **kwargs)
             return
