@@ -42,7 +42,7 @@ class ProcessSSH:
 
     @staticmethod
     def __is_failure(string):
-        for system, message in ProcessSSH.failureMessages.items():
+        for name, message in ProcessSSH.failureMessages.items():
             if message in string:
                 return True
         return False
