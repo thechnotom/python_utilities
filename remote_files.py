@@ -49,7 +49,7 @@ class ProcessSSH:
 
 
     @staticmethod
-    def __run_process(command, timeout=TIMEOUT, logger=None):
+    def run_process(command, timeout=TIMEOUT, logger=None):
         process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
@@ -74,7 +74,7 @@ class ProcessSSH:
 
     @staticmethod
     def copy_to_remote(user, host, src, dest, timeout=TIMEOUT, logger=None):
-        return ProcessSSH.__run_process(
+        return ProcessSSH.run_process(
             f"scp -r {src} {user}@{host}:{dest}",
             timeout,
             logger
@@ -83,7 +83,7 @@ class ProcessSSH:
 
     @staticmethod
     def copy_from_remote(user, host, src, dest, timeout=TIMEOUT, logger=None):
-        return ProcessSSH.__run_process(
+        return ProcessSSH.run_process(
             f"scp -r {user}@{host}:{src} {dest}",
             timeout,
             logger
@@ -92,7 +92,7 @@ class ProcessSSH:
 
     @staticmethod
     def delete(user, host, filename, timeout=TIMEOUT, logger=None):
-        return ProcessSSH.__run_process(
+        return ProcessSSH.run_process(
             f"ssh {user}@{host} \"rm -r {filename}\"",
             timeout,
             logger
@@ -101,7 +101,7 @@ class ProcessSSH:
 
     @staticmethod
     def ls(user, host, filename, timeout=TIMEOUT, logger=None):
-        return ProcessSSH.__run_process(
+        return ProcessSSH.run_process(
             f"ssh {user}@{host} \"ls {filename}\"",
             timeout,
             logger
@@ -110,7 +110,7 @@ class ProcessSSH:
 
     @staticmethod
     def __file_test(user, host, option, filename, timeout=TIMEOUT, logger=None):
-        return ProcessSSH.__run_process(
+        return ProcessSSH.run_process(
             f"ssh {user}@{host} \"[[ -{option} '{filename}' ]] && echo True\"",
             timeout,
             logger
@@ -134,7 +134,7 @@ class ProcessSSH:
 
     @staticmethod
     def __stat(user, host, option, filename, timeout=TIMEOUT, logger=None):
-        result = ProcessSSH.__run_process(
+        result = ProcessSSH.run_process(
             f"ssh {user}@{host} \"find \"{filename}\" -type f -exec stat \\" + "{}" + f" -c=\"%{option}\" \\; | sort -n -r | head -n 1\"",
             timeout,
             logger
@@ -156,37 +156,41 @@ class ProcessSSH:
         return ProcessSSH.__stat(user, host, "X", filename, timeout, logger)
 
 
-    def __inst_copy_to_remote(self, src, dest):
-        return ProcessSSH.copy_to_remote(self.user, self.host, src, dest, self.timeout, self.logger)
+    def __get_timeout(self, timeout):
+        return self.timeout if timeout is None else timeout
 
 
-    def __inst_copy_from_remote(self, src, dest):
-        return ProcessSSH.copy_from_remote(self.user, self.host, src, dest, self.timeout, self.logger)
+    def __inst_copy_to_remote(self, src, dest, timeout=None):
+        return ProcessSSH.copy_to_remote(self.user, self.host, src, dest, self.__get_timeout(timeout), self.logger)
 
 
-    def __inst_delete(self, filename):
-        return ProcessSSH.delete(self.user, self.host, filename, self.timeout, self.logger)
+    def __inst_copy_from_remote(self, src, dest, timeout=None):
+        return ProcessSSH.copy_from_remote(self.user, self.host, src, dest, self.__get_timeout(timeout), self.logger)
 
 
-    def __inst_ls(self, filename):
-        return ProcessSSH.ls(self.user, self.host, filename, self.timeout, self.logger)
+    def __inst_delete(self, filename, timeout=None):
+        return ProcessSSH.delete(self.user, self.host, filename, self.__get_timeout(timeout), self.logger)
 
 
-    def __inst_exists(self, filename):
-        return ProcessSSH.exists(self.user, self.host, filename, self.timeout, self.logger)
+    def __inst_ls(self, filename, timeout=None):
+        return ProcessSSH.ls(self.user, self.host, filename, self.__get_timeout(timeout), self.logger)
 
 
-    def __inst_is_file(self, filename):
-        return ProcessSSH.is_file(self.user, self.host, filename, self.timeout, self.logger)
+    def __inst_exists(self, filename, timeout=None):
+        return ProcessSSH.exists(self.user, self.host, filename, self.__get_timeout(timeout), self.logger)
 
 
-    def __inst_is_dir(self, filename):
-        return ProcessSSH.is_dir(self.user, self.host, filename, self.timeout, self.logger)
+    def __inst_is_file(self, filename, timeout=None):
+        return ProcessSSH.is_file(self.user, self.host, filename, self.__get_timeout(timeout), self.logger)
 
 
-    def __inst_last_modified(self, filename):
-        return ProcessSSH.last_modified(self.user, self.host, filename, self.timeout, self.logger)
+    def __inst_is_dir(self, filename, timeout=None):
+        return ProcessSSH.is_dir(self.user, self.host, filename, self.__get_timeout(timeout), self.logger)
 
 
-    def __inst_last_accessed(self, filename):
-        return ProcessSSH.last_accessed(self.user, self.host, filename, self.timeout, self.logger)
+    def __inst_last_modified(self, filename, timeout=None):
+        return ProcessSSH.last_modified(self.user, self.host, filename, self.__get_timeout(timeout), self.logger)
+
+
+    def __inst_last_accessed(self, filename, timeout=None):
+        return ProcessSSH.last_accessed(self.user, self.host, filename, self.__get_timeout(timeout), self.logger)
