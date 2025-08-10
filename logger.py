@@ -45,7 +45,8 @@ class Logger:
         do_strict_types=False,
         do_unknown_type_exception=False,
         do_override_type_exception=True,
-        do_prohibited_type_exception=True
+        do_prohibited_type_exception=True,
+        do_invalid_generic_exception=True
     ):
         self.__types = {} if types is None else types
         self.__printer = printer
@@ -59,6 +60,7 @@ class Logger:
         self.__do_unknown_type_exception = do_unknown_type_exception
         self.__do_override_type_exception = do_override_type_exception
         self.__do_prohibited_type_exception = do_prohibited_type_exception
+        self.__do_invalid_generic_exception = do_invalid_generic_exception
         self.__functions = {}
         self.input = self.__input_instance
         self.__prepare_logger()
@@ -85,6 +87,10 @@ class Logger:
 
     def get_do_prohibited_type_exception(self):
         return self.__do_prohibited_type_exception
+
+
+    def get_do_invalid_generic_exception(self):
+        return self.__do_invalid_generic_exception
 
 
     # Make the printer that will be added to the Logger instance
@@ -273,6 +279,9 @@ class Logger:
     def log(message, logger=None, log_type=None, *args, **kwargs):
         if logger is None:
             return
+        if callable(logger) and not isinstance(logger, Logger.Proxy):
+            logger(message)
+            return
         if log_type in Logger.__prohibited_names:
             raise LoggerExceptions.ProhibitedLoggerTypeException(f"Prohibited logger name was given: {log_type}", log_type)
         if log_type is None:
@@ -399,6 +408,9 @@ class Logger:
         def __call__(self, message, *args, **kwargs):
             if "generic" in self.__proxied.get_type_names():
                 self.__proxied.generic_logger(message, *args, **kwargs)
+            else:
+                if self.__proxied.get_do_invalid_generic_exception():
+                    raise LoggerInvalidUsageExceptions.InvalidGenericException(message)
 
 
 class LoggerExceptions:
@@ -421,6 +433,16 @@ class LoggerExceptions:
 
 
     class ProhibitedLoggerMethodException(LoggerNameException):
+        pass
+
+
+class LoggerInvalidUsageExceptions:
+
+    class LoggerInvalidUsageException(Exception):
+        def __init__(self, message):
+            super().__init__(message)
+
+    class InvalidGenericException(LoggerInvalidUsageException):
         pass
 
 
