@@ -454,6 +454,10 @@ class LoggerInvalidUsageExceptions:
 
 class Printers:
 
+    
+    file_printer_lock = threading.Lock()
+
+
     @staticmethod
     def make_console_printer():
         def printer(string, *args, **kwargs):
@@ -476,23 +480,24 @@ class Printers:
                     files.delete_file(backup_filename)
 
         def printer(string, do_newline=True):
-            if max_size is not None and files.get_file_size(filename) >= max_size:
-                backup_log_filenames = fc.get_backup_names(filename, log_dir)
-                next_log_filename = fc.get_relevant_backup_names(filename, backup_log_filenames, log_dir).next
-                files.copy_file(filename, next_log_filename)
-                files.clear_file(filename)
-
-                while True:
+            with Printers.file_printer_lock:
+                if max_size is not None and files.get_file_size(filename) >= max_size:
                     backup_log_filenames = fc.get_backup_names(filename, log_dir)
-                    if len(backup_log_filenames) <= max_backups or len(backup_log_filenames) == 0:
-                        break
-                    files.delete_file(fc.get_relevant_backup_names(filename, backup_log_filenames, log_dir).first)
+                    next_log_filename = fc.get_relevant_backup_names(filename, backup_log_filenames, log_dir).next
+                    files.copy_file(filename, next_log_filename)
+                    files.clear_file(filename)
 
-            with open(filename, "a") as f:
-                try:
-                    f.write(string + ("\n" if do_newline else ""))
-                except UnicodeEncodeError as e:
-                    f.write("PRINTER ERROR: Cannot write string\n")
+                    while True:
+                        backup_log_filenames = fc.get_backup_names(filename, log_dir)
+                        if len(backup_log_filenames) <= max_backups or len(backup_log_filenames) == 0:
+                            break
+                        files.delete_file(fc.get_relevant_backup_names(filename, backup_log_filenames, log_dir).first)
+
+                with open(filename, "a") as f:
+                    try:
+                        f.write(string + ("\n" if do_newline else ""))
+                    except UnicodeEncodeError as e:
+                        f.write("PRINTER ERROR: Cannot write string\n")
         return printer
 
 
