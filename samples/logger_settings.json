@@ -1,5 +1,6 @@
 {
     "do_logging": true,
+    "identifier": "SAMPLE",
     "do_type": true,
     "do_location": true,
     "do_short_location": true,

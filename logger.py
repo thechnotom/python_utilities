@@ -36,6 +36,7 @@ class Logger:
         self,
         types=None,
         printer=None,
+        identifier=None,
         do_timestamp=False,
         do_type=False,
         do_location=False,
@@ -50,6 +51,7 @@ class Logger:
     ):
         self.__types = {} if types is None else types
         self.__printer = printer
+        self.__identifier = identifier
         self.__do_timestamp = do_timestamp
         self.__do_type = do_type
         self.__do_location = do_location
@@ -157,9 +159,11 @@ class Logger:
 
     # Create a log preamble
     @staticmethod
-    def __create_preamble(name=None, do_type=False, do_timestamp=False, do_location=False, do_short_location=False, do_thread_name=False):
+    def __create_preamble(name=None, identifier=None, do_type=False, do_timestamp=False, do_location=False, do_short_location=False, do_thread_name=False):
+        # Add logger indentifier
+        result = f"{identifier}: " if (identifier is not None) else ""
         # Add the type of log
-        result = f"({name}) " if (do_type and name is not None) else ""
+        result += f"({name}) " if (do_type and name is not None) else ""
         # Add the timestamp
         result += Logger.__get_timestamp() if do_timestamp else ""
         # If a timestamp and location are included, add a space
@@ -185,6 +189,7 @@ class Logger:
     def __create_preamble_from_self(self, name):
         return Logger.__create_preamble(
             name=name,
+            identifier=self.__identifier,
             do_type=self.__do_type,
             do_timestamp=self.__do_timestamp,
             do_location=self.__do_location,
@@ -258,7 +263,7 @@ class Logger:
     @staticmethod
     def __log(message, logger=None, log_type=None, do_type_missing_indicator=True, *args, **kwargs):
         if logger is None or log_type is None:
-            preamble = Logger.__create_preamble(name=log_type, do_type=True, do_timestamp=True, do_location=True, do_thread_name=True)
+            preamble = Logger.__create_preamble(name=log_type, identifier=None, do_type=True, do_timestamp=True, do_location=True, do_thread_name=True)
             Logger.default_print(preamble + message, *args, **kwargs)
             return
         logger_func = Logger.__get_function(logger, log_type)
@@ -322,7 +327,7 @@ class Logger:
 
     @staticmethod
     def make_generic_logger():
-        logger = Logger({}, Logger.default_print, True, False, True, True)
+        logger = Logger({}, Logger.default_print, None, True, False, True, True)
         logger.__add_type("generic", True, False, True)  # bypass prohibited name checking
         return logger
 
@@ -353,6 +358,7 @@ class Logger:
         return Logger(
             settings["types"],
             printer=printer,
+            identifier=settings["identifier"],
             do_timestamp=settings["do_timestamp"],
             do_type=settings["do_type"],
             do_location=settings["do_location"],
