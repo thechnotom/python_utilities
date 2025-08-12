@@ -133,9 +133,18 @@ class ProcessSSH:
 
 
     @staticmethod
-    def __stat(user, host, option, filename, timeout=TIMEOUT, logger=None):
+    def __stat(user, host, option, filename, exclusions=None, timeout=TIMEOUT, logger=None):
+        condition = ""
+        if exclusions is not None and len(exclusions) > 0:
+            condition += " \\("
+            for i, exclusion in enumerate(exclusions):
+                condition += f" -not -wholename \"*{exclusion}*\" "
+                if i != len(exclusions) - 1:
+                    condition += "-and"
+            condition += "\\)"
+
         result = ProcessSSH.run_process(
-            f"ssh {user}@{host} \"find \"{filename}\" -type f -exec stat \\" + "{}" + f" -c=\"%{option}\" \\; | sort -n -r | head -n 1\"",
+            f"ssh {user}@{host} \"find \"{filename}\" -type f{condition} -exec stat \\" + "{}" + f" -c=\"%{option}\" \\; | sort -n -r | head -n 1\"",
             timeout,
             logger
         ).stdout.strip("\n").strip("=")
@@ -143,17 +152,17 @@ class ProcessSSH:
             return int(result)
         except ValueError as e:
             lg.Logger.log(f"Cannot convert \"{result}\" to int", logger)
-            return -1
+            return float("-inf")
 
 
     @staticmethod
-    def last_modified(user, host, filename, timeout=TIMEOUT, logger=None):
-        return ProcessSSH.__stat(user, host, "Y", filename, timeout, logger)
+    def last_modified(user, host, filename, exclusions=None, timeout=TIMEOUT, logger=None):
+        return ProcessSSH.__stat(user, host, "Y", filename, exclusions, timeout, logger)
 
 
     @staticmethod
-    def last_accessed(user, host, filename, timeout=TIMEOUT, logger=None):
-        return ProcessSSH.__stat(user, host, "X", filename, timeout, logger)
+    def last_accessed(user, host, filename, exclusions=None, timeout=TIMEOUT, logger=None):
+        return ProcessSSH.__stat(user, host, "X", filename, exclusions, timeout, logger)
 
 
     def __get_timeout(self, timeout):
@@ -188,9 +197,9 @@ class ProcessSSH:
         return ProcessSSH.is_dir(self.user, self.host, filename, self.__get_timeout(timeout), self.logger)
 
 
-    def __inst_last_modified(self, filename, timeout=None):
-        return ProcessSSH.last_modified(self.user, self.host, filename, self.__get_timeout(timeout), self.logger)
+    def __inst_last_modified(self, filename, exclusions=None, timeout=None):
+        return ProcessSSH.last_modified(self.user, self.host, filename, exclusions, self.__get_timeout(timeout), self.logger)
 
 
-    def __inst_last_accessed(self, filename, timeout=None):
-        return ProcessSSH.last_accessed(self.user, self.host, filename, self.__get_timeout(timeout), self.logger)
+    def __inst_last_accessed(self, filename, exclusions=None, timeout=None):
+        return ProcessSSH.last_accessed(self.user, self.host, filename, exclusions, self.__get_timeout(timeout), self.logger)

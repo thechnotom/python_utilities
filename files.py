@@ -160,26 +160,35 @@ def get_timestamp(target, logger=None):
         return None
 
 
-def get_mod_time_dir(filename):
+def __filename_excluded(filename, exclusions):
+    return exclusions is not None and len([x for x in exclusions if x in filename]) > 0
+
+
+def last_modified_dir(filename, exclusions=None):
     latest = float("-inf")
     for root, dirs, files in os.walk(filename):
         root_m_time = get_timestamp(root)
         if root_m_time > latest:
             latest = root_m_time
         for file in files:
-            file_m_time = get_timestamp(f"{root}/{file}")
+            full_filename = f"{root}/{file}"
+            file_m_time = float("-inf")
+            if not __filename_excluded(full_filename, exclusions):
+                file_m_time = get_timestamp(full_filename)
             if file_m_time > latest:
                 latest = file_m_time
     return latest
 
 
-def get_mod_time(target):
+def last_modified(target, exclusions=None):
     if not target_exists(target):
         return float("-inf")
     if os.path.isfile(target):
-        return get_timestamp(target)
+        if not __filename_excluded(target, exclusions):
+            return get_timestamp(target)
+        return float("-inf")
     else:
-        return get_mod_time_dir(target)
+        return last_modified_dir(target, exclusions)
 
 
 def create_directory(directory):
