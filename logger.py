@@ -128,8 +128,24 @@ class Logger:
         return self.__add_type(name, active, True, True)
 
 
+    def add_all_types(self, types, hide_exceptions=True):
+        for logger_type in types:
+            try:
+                self.add_type(logger_type, True)
+            except (LoggerExceptions.ProhibitedLoggerTypeException, LoggerExceptions.OverrideLoggerTypeException) as e:
+                if not hide_exceptions:
+                    raise e
+
+
     def has_type(self, name):
         return name in self.__functions
+
+
+    def has_all_types(self, types):
+        for logger_type in types:
+            if not self.has_type(logger_type):
+                return False
+        return True
 
 
     def is_type_active(self, name):
