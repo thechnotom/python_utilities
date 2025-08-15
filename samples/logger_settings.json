@@ -1,31 +1,35 @@
 {
-    "do_logging": true,
-    "identifier": "SAMPLE",
-    "do_type": true,
-    "do_location": true,
-    "do_short_location": true,
-    "do_thread_name": true,
-    "do_timestamp": true,
-    "do_type_missing_indicator": true,
-    "do_strict_types": false,
-    "type_error_handling": {
-        "do_unknown_type_exception": false,
-        "do_override_type_exception": true,
-        "do_prohibited_type_exception": true
+    "logger": {
+        "identifier": "SAMPLE",
+        "do_type": true,
+        "do_location": true,
+        "do_short_location": true,
+        "do_thread_name": true,
+        "do_timestamp": true,
+        "do_type_missing_indicator": true,
+        "do_strict_types": false,
+        "type_error_handling": {
+            "do_unknown_type_exception": false,
+            "do_override_type_exception": true,
+            "do_prohibited_type_exception": true
+        },
+        "types": {
+            "info": true,
+            "warning": true,
+            "error": true
+        }
     },
-    "console": {
-        "enable": true
-    },
-    "file": {
-        "enable": true,
-        "clear": true,
-        "output_filename": "logged_output.txt",
-        "max_file_size": 1000000,
-        "max_backups": 1
-    },
-    "types": {
-        "info": true,
-        "warning": true,
-        "error": true
+    "printer": {
+        "do_logging": true,
+        "console": {
+            "enable": true
+        },
+        "file": {
+            "enable": true,
+            "clear": true,
+            "output_filename": "logged_output.txt",
+            "max_file_size": 1000000,
+            "max_backups": 1
+        }
     }
 }

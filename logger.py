@@ -360,17 +360,28 @@ class Logger:
 
 
     @staticmethod
-    def from_settings_dict(settings):
-        printer = Printers.select_printer(
-            settings["do_logging"],
-            settings["console"]["enable"],
-            settings["file"]["enable"],
-            settings["file"]["clear"],
-            settings["file"]["output_filename"],
-            settings["file"]["max_file_size"],
-            settings["file"]["max_backups"]
+    def from_settings_dict_incl_printer(settings):
+        printer = Printers.select_printer_from_dict(settings["printer"])
+        logger_settings = settings["logger"]
+        return Logger(
+            logger_settings["types"],
+            printer=printer,
+            identifier=logger_settings["identifier"],
+            do_timestamp=logger_settings["do_timestamp"],
+            do_type=logger_settings["do_type"],
+            do_location=logger_settings["do_location"],
+            do_short_location=logger_settings["do_short_location"],
+            do_thread_name=logger_settings["do_thread_name"],
+            do_type_missing_indicator=logger_settings["do_type_missing_indicator"],
+            do_strict_types=logger_settings["do_strict_types"],
+            do_unknown_type_exception=logger_settings["type_error_handling"]["do_unknown_type_exception"],
+            do_override_type_exception=logger_settings["type_error_handling"]["do_override_type_exception"],
+            do_prohibited_type_exception=logger_settings["type_error_handling"]["do_prohibited_type_exception"]
         )
 
+
+    @staticmethod
+    def from_settings_dict(settings, printer):
         return Logger(
             settings["types"],
             printer=printer,
@@ -386,6 +397,28 @@ class Logger:
             do_override_type_exception=settings["type_error_handling"]["do_override_type_exception"],
             do_prohibited_type_exception=settings["type_error_handling"]["do_prohibited_type_exception"]
         )
+
+
+    def to_settings_dict(self):
+        return {
+            "logger": {
+                "identifier": self.__identifier,
+                "do_type": self.__do_type,
+                "do_location": self.__do_location,
+                "do_short_location": self.__do_short_location,
+                "do_thread_name": self.__do_thread_name,
+                "do_timestamp": self.__do_timestamp,
+                "do_type_missing_indicator": self.__do_type_missing_indicator,
+                "do_strict_types": self.__do_strict_types,
+                "type_error_handling": {
+                    "do_unknown_type_exception": self.__do_unknown_type_exception,
+                    "do_override_type_exception": self.__do_override_type_exception,
+                    "do_prohibited_type_exception": self.__do_prohibited_type_exception
+                },
+                "types": self.__types
+            },
+            "printer_function": self.__printer
+        }
 
 
     # Proxy to intercept calls made to the Logger object
@@ -539,3 +572,16 @@ class Printers:
         elif do_file_logging:
             return Printers.make_file_printer(output_filename, clear_log_file, max_file_size, max_backups)
         return None
+
+
+    @staticmethod
+    def select_printer_from_dict(settings):
+        return Printers.select_printer(
+            settings["do_logging"],
+            settings["console"]["enable"],
+            settings["file"]["enable"],
+            settings["file"]["clear"],
+            settings["file"]["output_filename"],
+            settings["file"]["max_file_size"],
+            settings["file"]["max_backups"]
+        )
