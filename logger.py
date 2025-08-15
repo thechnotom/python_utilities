@@ -84,7 +84,7 @@ class Logger:
         return self.__functions
 
 
-    def get_type_names(self, given_only=True):
+    def get_type_names(self, given_only=False):
         return self.__given_types if given_only else self.__types
 
 
@@ -354,7 +354,7 @@ class Logger:
 
     @staticmethod
     def make_silent_logger():
-        logger = Logger({}, lambda *args: None)
+        logger = Logger({}, lambda *args, **kwargs: None)
         return logger
 
 
