@@ -419,7 +419,7 @@ class Logger:
                     "do_override_type_exception": self.__do_override_type_exception,
                     "do_prohibited_type_exception": self.__do_prohibited_type_exception
                 },
-                "types": self.__types
+                "types": self.__given_types
             },
             "printer_function": self.__printer
         }
