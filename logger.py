@@ -49,7 +49,8 @@ class Logger:
         do_prohibited_type_exception=True,
         do_invalid_generic_exception=True
     ):
-        self.__types = {} if types is None else types
+        self.__given_types = types
+        self.__types = {} if types is None else types.copy()
         self.__printer = printer
         self.__identifier = identifier
         self.__do_timestamp = do_timestamp
@@ -83,8 +84,8 @@ class Logger:
         return self.__functions
 
 
-    def get_type_names(self):
-        return list(self.__functions.keys())
+    def get_type_names(self, given_only=True):
+        return self.__given_types if given_only else self.__types
 
 
     def get_do_prohibited_type_exception(self):
@@ -125,7 +126,10 @@ class Logger:
 
 
     def add_type(self, name, active):
-        return self.__add_type(name, active, True, True)
+        result = self.__add_type(name, active, True, True)
+        if result:
+            self.__given_types[name] = active
+        return result
 
 
     def add_all_types(self, types, hide_exceptions=True):
