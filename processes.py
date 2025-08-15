@@ -1,5 +1,6 @@
 from . import logger as lg
 import subprocess
+from collections import namedtuple
 
 
 ProcessResults = namedtuple("ProcessResults", ["stdout", "stderr", "success"])

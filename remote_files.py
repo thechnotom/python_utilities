@@ -1,7 +1,6 @@
 import subprocess
 from . import logger as lg
 from . import processes as pr
-from collections import namedtuple
 
 
 # Utilities focusing on using an external SSH process
