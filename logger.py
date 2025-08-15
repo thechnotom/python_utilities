@@ -49,7 +49,7 @@ class Logger:
         do_prohibited_type_exception=True,
         do_invalid_generic_exception=True
     ):
-        self.__given_types = types
+        self.__given_types = {} if types is None else types.copy()
         self.__types = {} if types is None else types.copy()
         self.__printer = printer
         self.__identifier = identifier
