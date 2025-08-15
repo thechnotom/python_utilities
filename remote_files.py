@@ -1,9 +1,7 @@
 import subprocess
 from . import logger as lg
+from . import processes as pr
 from collections import namedtuple
-
-
-ProcessResults = namedtuple("ProcessResults", ["stdout", "stderr", "success"])
 
 
 # Utilities focusing on using an external SSH process
@@ -49,32 +47,17 @@ class ProcessSSH:
 
 
     @staticmethod
-    def run_process(command, timeout=TIMEOUT, logger=None):
-        process = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-
-        output = None
-        try:
-            output = process.communicate(timeout=timeout)
-        except subprocess.TimeoutExpired as e:
-            lg.Logger.log(f"Failed to communicate with process (timeout: {timeout}): {command}", logger)
-            process.kill()
-            return ProcessResults("", "", False)
-        out = output[0].decode("utf-8")
-        err = output[1].decode("utf-8")
-
-        if ProcessSSH.__is_failure(err):
+    def __run_process(command, timeout=TIMEOUT, logger=None):
+        result = pr.run_process(command, timeout, "utf-8", logger)
+        if ProcessSSH.__is_failure(result.stderr):
             lg.Logger.log(err.strip("\n"), logger)
-            return ProcessResults(out, err, False)
-        return ProcessResults(out, err, True)
+            return pr.ProcessResults("", "", False)
+        return result
 
 
     @staticmethod
     def copy_to_remote(user, host, src, dest, timeout=TIMEOUT, logger=None):
-        return ProcessSSH.run_process(
+        return ProcessSSH.__run_process(
             f"scp -r {src} {user}@{host}:{dest}",
             timeout,
             logger
@@ -83,7 +66,7 @@ class ProcessSSH:
 
     @staticmethod
     def copy_from_remote(user, host, src, dest, timeout=TIMEOUT, logger=None):
-        return ProcessSSH.run_process(
+        return ProcessSSH.__run_process(
             f"scp -r {user}@{host}:{src} {dest}",
             timeout,
             logger
@@ -92,7 +75,7 @@ class ProcessSSH:
 
     @staticmethod
     def delete(user, host, filename, timeout=TIMEOUT, logger=None):
-        return ProcessSSH.run_process(
+        return ProcessSSH.__run_process(
             f"ssh {user}@{host} \"rm -r {filename}\"",
             timeout,
             logger
@@ -101,7 +84,7 @@ class ProcessSSH:
 
     @staticmethod
     def ls(user, host, filename, timeout=TIMEOUT, logger=None):
-        return ProcessSSH.run_process(
+        return ProcessSSH.__run_process(
             f"ssh {user}@{host} \"ls {filename}\"",
             timeout,
             logger
@@ -110,7 +93,7 @@ class ProcessSSH:
 
     @staticmethod
     def __file_test(user, host, option, filename, timeout=TIMEOUT, logger=None):
-        return ProcessSSH.run_process(
+        return ProcessSSH.__run_process(
             f"ssh {user}@{host} \"[[ -{option} '{filename}' ]] && echo True\"",
             timeout,
             logger
@@ -143,7 +126,7 @@ class ProcessSSH:
                     condition += "-and"
             condition += "\\)"
 
-        result = ProcessSSH.run_process(
+        result = ProcessSSH.__run_process(
             f"ssh {user}@{host} \"find \"{filename}\" -type f{condition} -exec stat \\" + "{}" + f" -c=\"%{option}\" \\; | sort -n -r | head -n 1\"",
             timeout,
             logger
