@@ -88,6 +88,10 @@ class Logger:
         return self.__given_types if given_only else self.__types
 
 
+    def get_identifier(self):
+        return self.__identifier
+
+
     def get_do_prohibited_type_exception(self):
         return self.__do_prohibited_type_exception
 
