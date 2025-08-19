@@ -46,18 +46,24 @@ class ProcessSSH:
 
 
     @staticmethod
+    def __prep_filename(filename):
+        return filename.replace("\\", "/").replace(" ", r"\ ")
+
+
+    @staticmethod
     def __run_process(command, timeout=TIMEOUT, logger=None):
         result = pr.run_process(command, timeout, "utf-8", logger)
         if ProcessSSH.__is_failure(result.stderr):
-            lg.Logger.log(err.strip("\n"), logger)
-            return pr.ProcessResults("", "", False)
+            lg.Logger.log(f"Command failed: {command}")
+            lg.Logger.log(result.stderr.strip("\n"), logger)
+            result.success = False
         return result
 
 
     @staticmethod
     def copy_to_remote(user, host, src, dest, timeout=TIMEOUT, logger=None):
         return ProcessSSH.__run_process(
-            f"scp -r {src} {user}@{host}:{dest}",
+            f"scp -r \"{src}\" {user}@{host}:\"{dest}\"",
             timeout,
             logger
         ).success
@@ -66,7 +72,7 @@ class ProcessSSH:
     @staticmethod
     def copy_from_remote(user, host, src, dest, timeout=TIMEOUT, logger=None):
         return ProcessSSH.__run_process(
-            f"scp -r {user}@{host}:{src} {dest}",
+            f"scp -r {user}@{host}:\"{src}\" \"{dest}\"",
             timeout,
             logger
         ).success
@@ -75,7 +81,7 @@ class ProcessSSH:
     @staticmethod
     def delete(user, host, filename, timeout=TIMEOUT, logger=None):
         return ProcessSSH.__run_process(
-            f"ssh {user}@{host} \"rm -r {filename}\"",
+            f"ssh {user}@{host} \"rm -r {ProcessSSH.__prep_filename(filename)}\"",
             timeout,
             logger
         ).success
@@ -84,7 +90,7 @@ class ProcessSSH:
     @staticmethod
     def ls(user, host, filename, timeout=TIMEOUT, logger=None):
         return ProcessSSH.__run_process(
-            f"ssh {user}@{host} \"ls {filename}\"",
+            f"ssh {user}@{host} \"ls {ProcessSSH.__prep_filename(filename)}\"",
             timeout,
             logger
         ).stdout.strip("\n").split("\n")
