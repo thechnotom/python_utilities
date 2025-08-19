@@ -26,7 +26,7 @@
         },
         "file": {
             "enable": true,
-            "clear": true,
+            "clear": false,
             "output_filename": "logged_output.txt",
             "max_file_size": 1000000,
             "max_backups": 1
