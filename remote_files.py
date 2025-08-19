@@ -54,7 +54,7 @@ class ProcessSSH:
     def __run_process(command, timeout=TIMEOUT, logger=None):
         result = pr.run_process(command, timeout, "utf-8", logger)
         if ProcessSSH.__is_failure(result.stderr):
-            lg.Logger.log(f"Command failed: {command}")
+            lg.Logger.log(f"Command failed: {command}", logger)
             lg.Logger.log(result.stderr.strip("\n"), logger)
             result.success = False
         return result
