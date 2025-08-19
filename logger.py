@@ -531,7 +531,8 @@ class Printers:
 
         if clear:
             files.clear_file(filename)
-            for backup_filename in fc.get_backup_names(filename, log_dir):
+            log_dir_items = files.get_all_items(log_dir)
+            for backup_filename in fc.get_backup_names(filename, log_dir_items):
                 backup_filename = f"{log_dir}/{backup_filename}"
                 if files.target_exists(backup_filename):
                     files.delete_file(backup_filename)
@@ -539,13 +540,15 @@ class Printers:
         def printer(string, do_newline=True):
             with Printers.file_printer_lock:
                 if max_size is not None and files.get_file_size(filename) >= max_size:
-                    backup_log_filenames = fc.get_backup_names(filename, log_dir)
+                    log_dir_items = files.get_all_items(log_dir)
+                    backup_log_filenames = fc.get_backup_names(filename, log_dir_items)
                     next_log_filename = fc.get_relevant_backup_names(filename, backup_log_filenames, log_dir).next
                     files.copy_file(filename, next_log_filename)
                     files.clear_file(filename)
 
                     while True:
-                        backup_log_filenames = fc.get_backup_names(filename, log_dir)
+                        log_dir_items = files.get_all_items(log_dir)
+                        backup_log_filenames = fc.get_backup_names(filename, log_dir_items)
                         if len(backup_log_filenames) <= max_backups or len(backup_log_filenames) == 0:
                             break
                         files.delete_file(fc.get_relevant_backup_names(filename, backup_log_filenames, log_dir).first)
