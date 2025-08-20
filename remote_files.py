@@ -33,7 +33,7 @@ class ProcessSSH:
         self.last_accessed = self.__inst_last_accessed
 
 
-    def set_logger(logger):
+    def set_logger(self, logger):
         self.logger = logger
 
 
