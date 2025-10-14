@@ -158,7 +158,7 @@ def __get_merge_commands_recursive(item1, item2, destination, commands):
 
     # Check same items (at this point, we know they're either both files or both directories)
     for i in same:
-        __get_merge_commands_recursive(
+        commands = __get_merge_commands_recursive(
             i.with_new_base(item1.get_base()),
             i.with_new_base(item2.get_base()),
             destination,
