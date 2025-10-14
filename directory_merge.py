@@ -104,7 +104,8 @@ def create_logger(show_general, show_copy, show_conflict):
 
 
 def __copy(source, destination, logger=None):
-    return files.copy(source, destination, 1, logger=logger.copy)
+    logger_function = None if logger is None else logger.copy
+    return files.copy(source, destination, 1, logger=logger_function)
 
 
 def __mk_dir(directory):
