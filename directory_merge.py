@@ -94,10 +94,10 @@ def __newer_file(f1, f2):
     return f2
 
 
-def create_logger(show_general, show_copy, show_conflict):
+def create_logger(show_general, show_copy, show_conflict, printer=print):
     return Logger(
         types={"general": show_general, "copy": show_copy, "conflict": show_conflict},
-        printer=print,
+        printer=printer,
         do_timestamp=True,
         do_type=True
     )
@@ -117,12 +117,17 @@ def __warn(path1, path2, logger=None):
 
 
 def merge(directory1, directory2, destination, logger=None):
-    required_types = ["general", "copy", "conflict"]
     if logger is not None:
+        required_types = ["general", "copy", "conflict"]
         logger.has_all_types(required_types, do_exception=True)
+    Logger.log("Starting search...", logger, "general")
     commands = __get_merge_commands_recursive(FileItem(directory1, ""), FileItem(directory2, ""), destination, [])
-    for command in commands:
+    Logger.log("Starting command execution...", logger, "general")
+    for i, command in enumerate(commands):
+        Logger.log(f"Executing ({i + 1}/{len(commands)}): {command}", logger, "general")
         command.do(logger=logger)
+        Logger.log(f"Result: {command.get_result()}", logger, "general")
+    Logger.log("Complete", logger, "general")
     return commands
 
 
