@@ -145,13 +145,17 @@ class Logger:
                     raise e
 
 
-    def has_type(self, name):
-        return name in self.__functions
+    def has_type(self, name, do_exception=False):
+        if name in self.__functions:
+            return True
+        if do_exception:
+            raise LoggerInvalidUsageExceptions.InvalidTypesException(f"Logger does not have the type: {name}")
+        return False
 
 
-    def has_all_types(self, types):
+    def has_all_types(self, types, do_exception=False):
         for logger_type in types:
-            if not self.has_type(logger_type):
+            if not self.has_type(logger_type, do_exception=do_exception):
                 return False
         return True
 
@@ -506,6 +510,9 @@ class LoggerInvalidUsageExceptions:
             super().__init__(message)
 
     class InvalidGenericException(LoggerInvalidUsageException):
+        pass
+
+    class InvalidTypesException(LoggerInvalidUsageException):
         pass
 
 
