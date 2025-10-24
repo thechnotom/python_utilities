@@ -53,6 +53,7 @@ class FileItem:
     def __init__(self, base, tail):
         self.__base = base
         self.__tail = tail
+        self.is_file = None
 
     def get_path(self):
         return FileItem.attach_paths(self.__base, self.__tail)
@@ -65,9 +66,6 @@ class FileItem:
     
     def with_new_base(self, base):
         return FileItem(base, self.__tail)
-    
-    def is_file(self):
-        return os.path.isfile(self.get_path())
 
     @staticmethod
     def attach_paths(p1, p2):
@@ -82,7 +80,7 @@ class FileItem:
         return hash(self.__tail)
 
     def __eq__(self, fc):
-        return self.__tail == fc.get_tail() and self.is_file() == self.is_file()
+        return self.__tail == fc.get_tail()
 
     def __str__(self):
         return self.get_path()
@@ -116,60 +114,109 @@ def __warn(path1, path2, logger=None):
     Logger.log(f"File and directory share a name (both have been skipped): {path1}, {path2}", logger, "conflict")
 
 
-def merge(directory1, directory2, destination, logger=None):
+def __get_all_items(directory):
+    return files.get_all_items(directory)
+
+
+def __is_file(filename):
+    return os.path.isfile(filename)
+
+
+def merge_into_destination_local(directory, destination, logger=None):
+    return merge(directory, destination, destination, ignore_commands=[CommandCode.NEW_FROM_D2], logger=logger)
+
+
+def merge(directory1, directory2, destination,
+          copy_from_item1_op=__copy,
+          copy_from_item2_op=__copy,
+          get_all_items_in_item1_op=__get_all_items,
+          get_all_items_in_item2_op=__get_all_items,
+          is_file_for_item1_op=__is_file,
+          is_file_for_item2_op=__is_file,
+          mk_dir_op=__mk_dir,
+          warn_op=__warn,
+          ignore_commands=None,
+          logger=None):
+
+    # --------------------------
+    # Define recursive function
+    # --------------------------
+
+    def __get_merge_commands_recursive(item1, item2, destination, commands):
+        item1.is_file = is_file_for_item1_op(item1.get_path())
+        item2.is_file = is_file_for_item2_op(item2.get_path())
+        if item1.is_file and item2.is_file:
+            # Determine which item is newer
+            copy_command = None
+            file_item = None
+            if files.get_timestamp(item1.get_path()) > files.get_timestamp(item2.get_path()):
+                copy_command = copy_from_item1_op
+                file_item = item1
+            else:
+                copy_command = copy_from_item2_op
+                file_item = item2
+            commands.append(Command(CommandCode.NEWEST, copy_command, file_item.get_path(), FileItem(destination, file_item.get_tail()).get_path()))
+            return commands
+
+        # Handle special case where there's a file in one item and a folder in the other sharing the same name
+        if item1.get_tail() == item2.get_tail() and item1.is_file != item2.is_file:
+            commands.append(Command(CommandCode.FILE_DIR_MATCH_CONFLICT, warn_op, item1.get_path(), item2.get_path()))
+            return commands
+
+        items1 = {FileItem(item1.get_base(), FileItem.attach_paths(item1.get_tail(), x)) for x in set(get_all_items_in_item1_op(item1.get_path()))}
+        items2 = {FileItem(item2.get_base(), FileItem.attach_paths(item2.get_tail(), x)) for x in set(get_all_items_in_item2_op(item2.get_path()))}
+
+        union = items1.union(items2)
+        items1_extras = union - items2
+        items2_extras = union - items1
+        same = items1.intersection(items2)
+
+        # Create the current directory
+        commands.append(Command(CommandCode.MAKE_DIR, mk_dir_op, FileItem.attach_paths(destination, item1.get_tail())))
+
+        if len(items1) == 0 and len(items2) == 0:
+            return commands
+
+        # Check same items (at this point, we know they're either both files or both directories)
+        for i in same:
+            commands = __get_merge_commands_recursive(
+                i.with_new_base(item1.get_base()),
+                i.with_new_base(item2.get_base()),
+                destination,
+                commands
+            )
+
+        # Determine what to do with differences
+        for i in items1_extras:
+            new_item1 = i.with_new_base(item1.get_base())
+            commands.append(Command(CommandCode.NEW_FROM_D1, __copy, new_item1.get_path(), FileItem(destination, new_item1.get_tail()).get_path()))
+        for i in items2_extras:
+            new_item2 = i.with_new_base(item2.get_base())
+            commands.append(Command(CommandCode.NEW_FROM_D2, __copy, new_item2.get_path(), FileItem(destination, new_item2.get_tail()).get_path()))
+        return commands
+
+    # --------------------------
+    # Use the recursive function
+    # --------------------------
+
     if logger is not None:
         required_types = ["general", "copy", "conflict"]
         logger.has_all_types(required_types, do_exception=True)
     Logger.log("Starting search...", logger, "general")
     commands = __get_merge_commands_recursive(FileItem(directory1, ""), FileItem(directory2, ""), destination, [])
     Logger.log("Starting command execution...", logger, "general")
+    
+    # Remove ignored commands
+    num_all_commands = len(commands)
+    ignore_commands = [] if ignore_commands is None else ignore_commands
+    commands = [x for x in commands if x.get_code() not in ignore_commands]
+    num_valid_commands = len(commands)
+    if num_valid_commands != num_all_commands:
+        Logger.log(f"Ignoring {num_all_commands - num_valid_commands} of {num_all_commands} commands", logger, "general")
+
     for i, command in enumerate(commands):
         Logger.log(f"Executing ({i + 1}/{len(commands)}): {command}", logger, "general")
         command.do(logger=logger)
         Logger.log(f"Result: {command.get_result()}", logger, "general")
     Logger.log("Complete", logger, "general")
-    return commands
-
-
-def __get_merge_commands_recursive(item1, item2, destination, commands):
-    if item1.is_file() and item2.is_file():
-        newer = __newer_file(item1, item2)
-        commands.append(Command(CommandCode.NEWEST, __copy, newer.get_path(), FileItem(destination, newer.get_tail()).get_path()))
-        return commands
-
-    # Handle special case where there's a file in one item and a folder in the other sharing the same name
-    if item1.get_tail() == item2.get_tail() and item1.is_file() != item2.is_file():
-        commands.append(Command(CommandCode.FILE_DIR_MATCH_CONFLICT, __warn, item1.get_path(), item2.get_path()))
-        return commands
-
-    items1 = {FileItem(item1.get_base(), FileItem.attach_paths(item1.get_tail(), x)) for x in set(files.get_all_items(item1.get_path()))}
-    items2 = {FileItem(item2.get_base(), FileItem.attach_paths(item2.get_tail(), x)) for x in set(files.get_all_items(item2.get_path()))}
-
-    union = items1.union(items2)
-    items1_extras = union - items2
-    items2_extras = union - items1
-    same = items1.intersection(items2)
-
-    # Create the current directory
-    commands.append(Command(CommandCode.MAKE_DIR, __mk_dir, FileItem.attach_paths(destination, item1.get_tail())))
-
-    if len(items1) == 0 and len(items2) == 0:
-        return commands
-
-    # Check same items (at this point, we know they're either both files or both directories)
-    for i in same:
-        commands = __get_merge_commands_recursive(
-            i.with_new_base(item1.get_base()),
-            i.with_new_base(item2.get_base()),
-            destination,
-            commands
-        )
-
-    # Determine what to do with differences
-    for i in items1_extras:
-        new_item1 = i.with_new_base(item1.get_base())
-        commands.append(Command(CommandCode.NEW_FROM_D1, __copy, new_item1.get_path(), FileItem(destination, new_item1.get_tail()).get_path()))
-    for i in items2_extras:
-        new_item2 = i.with_new_base(item2.get_base())
-        commands.append(Command(CommandCode.NEW_FROM_D2, __copy, new_item2.get_path(), FileItem(destination, new_item2.get_tail()).get_path()))
     return commands
