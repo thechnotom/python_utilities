@@ -26,6 +26,7 @@ class ProcessSSH:
         self.copy_from_remote = self.__inst_copy_from_remote
         self.delete = self.__inst_delete
         self.ls = self.__inst_ls
+        self.mkdir = self.__inst_mkdir
         self.exists = self.__inst_exists
         self.is_file = self.__inst_is_file
         self.is_dir = self.__inst_is_dir
@@ -56,7 +57,7 @@ class ProcessSSH:
         if ProcessSSH.__is_failure(result.stderr):
             lg.Logger.log(f"Command failed: {command}", logger)
             lg.Logger.log(result.stderr.strip("\n"), logger)
-            result.success = False
+            result = pr.ProcessResults(result.stdout, result.stderr, False)
         return result
 
 
@@ -94,6 +95,15 @@ class ProcessSSH:
             timeout,
             logger
         ).stdout.strip("\n").split("\n")
+
+
+    @staticmethod
+    def mkdir(user, host, filename, timeout=TIMEOUT, logger=None):
+        return ProcessSSH.__run_process(
+            f"ssh {user}@{host} \"mkdir {ProcessSSH.__prep_filename(filename)}\"",
+            timeout,
+            logger
+        ).success
 
 
     @staticmethod
@@ -171,6 +181,10 @@ class ProcessSSH:
 
     def __inst_ls(self, filename, timeout=None):
         return ProcessSSH.ls(self.user, self.host, filename, self.__get_timeout(timeout), self.logger)
+
+
+    def __inst_mkdir(self, filename, timeout=None):
+        return ProcessSSH.mkdir(self.user, self.host, filename, self.__get_timeout(timeout), self.logger)
 
 
     def __inst_exists(self, filename, timeout=None):
