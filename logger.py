@@ -8,8 +8,8 @@ from . import file_counting as fc
 class Logger:
 
     __universal_logger_name = "_"
-    __prohibited_functions = ["get_functions", "generic_logger"]
-    __prohibited_names = __prohibited_functions + ["logger", "generic", "in_prompt", "in_received", __universal_logger_name]
+    __prohibited_functions = ["get_functions", "generic_logger", "silent_logger"]
+    __prohibited_names = __prohibited_functions + ["logger", "generic", "silent", "in_prompt", "in_received", __universal_logger_name]
     default_print = print
 
 
@@ -363,13 +363,18 @@ class Logger:
     @staticmethod
     def make_silent_logger():
         logger = Logger({}, lambda *args, **kwargs: None)
-        logger.__add_type("generic", True, False, True)  # bypass prohibited name checking and allow directly calling Proxy instances like a function
+        logger.__add_type("silent", True, False, True)  # bypass prohibited name checking and allow directly calling Proxy instances like a function
         return logger
 
 
     # Used by Proxy class (which blocks it from being used elsewhere)
     def generic_logger(self, message, *args, **kwargs):
         Logger.__log(message, self, "generic", *args, **kwargs)
+
+
+    # Used by Proxy class (which blocks it from being used elsewhere)
+    def silent_logger(self, message, *args, **kwargs):
+        Logger.__log(message, self, "silent", *args, **kwargs)
 
 
     @staticmethod
@@ -476,6 +481,8 @@ class Logger:
         def __call__(self, message, *args, **kwargs):
             if "generic" in self.__proxied.get_type_names():
                 self.__proxied.generic_logger(message, *args, **kwargs)
+            elif "silent" in self.__proxied.get_type_names():
+                self.__proxied.silent_logger(message, *args, **kwargs)
             else:
                 if self.__proxied.get_do_invalid_generic_exception():
                     raise LoggerInvalidUsageExceptions.InvalidGenericException(message)
