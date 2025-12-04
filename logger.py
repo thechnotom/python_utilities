@@ -47,7 +47,7 @@ class Logger:
         do_unknown_type_exception=False,
         do_override_type_exception=True,
         do_prohibited_type_exception=True,
-        do_invalid_generic_exception=True
+        do_invalid_instance_call_exception=True
     ):
         self.__given_types = {} if types is None else types.copy()
         self.__types = {} if types is None else types.copy()
@@ -63,7 +63,7 @@ class Logger:
         self.__do_unknown_type_exception = do_unknown_type_exception
         self.__do_override_type_exception = do_override_type_exception
         self.__do_prohibited_type_exception = do_prohibited_type_exception
-        self.__do_invalid_generic_exception = do_invalid_generic_exception
+        self.__do_invalid_instance_call_exception = do_invalid_instance_call_exception
         self.__functions = {}
         self.input = self.__input_instance
         self.__prepare_logger()
@@ -97,7 +97,7 @@ class Logger:
 
 
     def get_do_invalid_generic_exception(self):
-        return self.__do_invalid_generic_exception
+        return self.__do_invalid_instance_call_exception
 
 
     # Make the printer that will be added to the Logger instance
@@ -484,8 +484,8 @@ class Logger:
             elif "silent" in self.__proxied.get_type_names():
                 self.__proxied.silent_logger(message, *args, **kwargs)
             else:
-                if self.__proxied.get_do_invalid_generic_exception():
-                    raise LoggerInvalidUsageExceptions.InvalidGenericException(message)
+                if self.__proxied.get_do_invalid_instance_call_exception():
+                    raise LoggerInvalidUsageExceptions.InvalidInstanceCallException(message)
 
 
 class LoggerExceptions:
@@ -517,7 +517,7 @@ class LoggerInvalidUsageExceptions:
         def __init__(self, message):
             super().__init__(message)
 
-    class InvalidGenericException(LoggerInvalidUsageException):
+    class InvalidInstanceCallException(LoggerInvalidUsageException):
         pass
 
     class InvalidTypesException(LoggerInvalidUsageException):
