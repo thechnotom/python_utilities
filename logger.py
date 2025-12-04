@@ -356,13 +356,14 @@ class Logger:
     @staticmethod
     def make_generic_logger():
         logger = Logger({}, Logger.default_print, None, True, False, True, True)
-        logger.__add_type("generic", True, False, True)  # bypass prohibited name checking
+        logger.__add_type("generic", True, False, True)  # bypass prohibited name checking and allow directly calling Proxy instances like a function
         return logger
 
 
     @staticmethod
     def make_silent_logger():
         logger = Logger({}, lambda *args, **kwargs: None)
+        logger.__add_type("generic", True, False, True)  # bypass prohibited name checking and allow directly calling Proxy instances like a function
         return logger
 
 
