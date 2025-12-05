@@ -96,7 +96,7 @@ class Logger:
         return self.__do_prohibited_type_exception
 
 
-    def get_do_invalid_generic_exception(self):
+    def get_do_invalid_instance_call_exception(self):
         return self.__do_invalid_instance_call_exception
 
 
