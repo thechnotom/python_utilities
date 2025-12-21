@@ -43,9 +43,10 @@ class Command:
 class CommandCode(Enum):
     NEW_FROM_D1 = 1
     NEW_FROM_D2 = 2
-    NEWEST = 3
-    MAKE_DIR = 4
-    FILE_DIR_MATCH_CONFLICT = 5
+    NEWEST_FROM_D1 = 3
+    NEWEST_FROM_D2 = 4
+    MAKE_DIR = 5
+    FILE_DIR_MATCH_CONFLICT = 6
 
 
 class FileItem:
@@ -92,9 +93,9 @@ def __newer_file(f1, f2):
     return f2
 
 
-def create_logger(show_general, show_copy, show_conflict, printer=print):
+def create_logger(show_general=True, show_search=True, show_copy=True, show_conflict=True, printer=print):
     return Logger(
-        types={"general": show_general, "copy": show_copy, "conflict": show_conflict},
+        types={"general": show_general, "search": show_search, "copy": show_copy, "conflict": show_conflict},
         printer=printer,
         do_timestamp=True,
         do_type=True
@@ -103,6 +104,12 @@ def create_logger(show_general, show_copy, show_conflict, printer=print):
 
 def __copy(source, destination, logger=None):
     logger_function = None if logger is None else logger.copy
+    return files.copy(source, destination, 1, logger=logger_function)
+
+
+def __create_dir_and_copy(source, destination, logger=None):
+    logger_function = None if logger is None else logger.copy
+    os.makedirs(os.path.dirname(destination), exist_ok=True)
     return files.copy(source, destination, 1, logger=logger_function)
 
 
@@ -122,6 +129,14 @@ def __is_file(filename):
     return os.path.isfile(filename)
 
 
+def get_differences_local(directory1, directory2, destination, logger=None):
+    return merge(directory1, directory2, destination,
+                 ignore_commands=[CommandCode.NEWEST_FROM_D1, CommandCode.NEWEST_FROM_D2, CommandCode.MAKE_DIR],
+                 copy_from_item1_op=__create_dir_and_copy,
+                 copy_from_item2_op=__create_dir_and_copy,
+                 logger=logger)
+
+
 def merge_into_destination_local(directory, destination, logger=None):
     return merge(directory, destination, destination, ignore_commands=[CommandCode.NEW_FROM_D2], logger=logger)
 
@@ -136,6 +151,7 @@ def merge(directory1, directory2, destination,
           mk_dir_op=__mk_dir,
           warn_op=__warn,
           ignore_commands=None,
+          execute_commands=True,
           logger=None):
 
     # --------------------------
@@ -143,6 +159,9 @@ def merge(directory1, directory2, destination,
     # --------------------------
 
     def __get_merge_commands_recursive(item1, item2, destination, commands):
+        Logger.log("Comparing:", logger, "search")
+        Logger.log(f"| {item1}", logger, "search")
+        Logger.log(f"| {item2}", logger, "search")
         item1.is_file = is_file_for_item1_op(item1.get_path())
         item2.is_file = is_file_for_item2_op(item2.get_path())
         if item1.is_file and item2.is_file:
@@ -150,12 +169,9 @@ def merge(directory1, directory2, destination,
             copy_command = None
             file_item = None
             if files.get_timestamp(item1.get_path()) > files.get_timestamp(item2.get_path()):
-                copy_command = copy_from_item1_op
-                file_item = item1
+                commands.append(Command(CommandCode.NEWEST_FROM_D1, copy_from_item1_op, item1.get_path(), FileItem(destination, item1.get_tail()).get_path()))
             else:
-                copy_command = copy_from_item2_op
-                file_item = item2
-            commands.append(Command(CommandCode.NEWEST, copy_command, file_item.get_path(), FileItem(destination, file_item.get_tail()).get_path()))
+                commands.append(Command(CommandCode.NEWEST_FROM_D2, copy_from_item2_op, item2.get_path(), FileItem(destination, item2.get_tail()).get_path()))
             return commands
 
         # Handle special case where there's a file in one item and a folder in the other sharing the same name
@@ -189,10 +205,10 @@ def merge(directory1, directory2, destination,
         # Determine what to do with differences
         for i in items1_extras:
             new_item1 = i.with_new_base(item1.get_base())
-            commands.append(Command(CommandCode.NEW_FROM_D1, __copy, new_item1.get_path(), FileItem(destination, new_item1.get_tail()).get_path()))
+            commands.append(Command(CommandCode.NEW_FROM_D1, copy_from_item1_op, new_item1.get_path(), FileItem(destination, new_item1.get_tail()).get_path()))
         for i in items2_extras:
             new_item2 = i.with_new_base(item2.get_base())
-            commands.append(Command(CommandCode.NEW_FROM_D2, __copy, new_item2.get_path(), FileItem(destination, new_item2.get_tail()).get_path()))
+            commands.append(Command(CommandCode.NEW_FROM_D2, copy_from_item2_op, new_item2.get_path(), FileItem(destination, new_item2.get_tail()).get_path()))
         return commands
 
     # --------------------------
@@ -213,6 +229,9 @@ def merge(directory1, directory2, destination,
     num_valid_commands = len(commands)
     if num_valid_commands != num_all_commands:
         Logger.log(f"Ignoring {num_all_commands - num_valid_commands} of {num_all_commands} commands", logger, "general")
+
+    if not execute_commands:
+        return commands
 
     for i, command in enumerate(commands):
         Logger.log(f"Executing ({i + 1}/{len(commands)}): {command}", logger, "general")
