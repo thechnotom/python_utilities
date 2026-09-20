@@ -8,7 +8,7 @@ from . import file_counting as fc
 class Logger:
 
     __universal_logger_name = "_"
-    __prohibited_functions = ["get_functions", "generic_logger", "silent_logger"]
+    __prohibited_functions = ["get_functions", "generic_logger", "silent_logger", "get_types"]
     __prohibited_names = __prohibited_functions + ["logger", "generic", "silent", "in_prompt", "in_received", __universal_logger_name]
     default_print = print
 
@@ -101,9 +101,9 @@ class Logger:
 
 
     # Make the printer that will be added to the Logger instance
-    def __make_printer(self, name, use):
+    def __make_printer(self, name):
         def logger(string, *args, **kwargs):
-            if use and self.__printer is not None:
+            if self.__printer is not None:
                 preamble = self.__create_preamble_from_self(name)
                 # Use the provided printer to log the result
                 self.__printer(preamble + string, *args, **kwargs)
@@ -125,7 +125,7 @@ class Logger:
         if name not in self.__types:
             self.__types[name] = active
         # Add the logger to the Logger instance
-        self.__functions[name] = self.__make_printer(name, active)
+        self.__functions[name] = self.__make_printer(name)
         return True
 
 
@@ -158,11 +158,22 @@ class Logger:
             if not self.has_type(logger_type, do_exception=do_exception):
                 return False
         return True
+    
+
+    def get_types(self):
+        return self.__types.copy()
 
 
     def is_type_active(self, name):
         if name in self.__types:
             return self.__types[name]
+        return False
+    
+
+    def set_type_active_state(self, name, state):
+        if name in self.__types:
+            self.__types[name] = state
+            return True
         return False
 
 
@@ -367,6 +378,20 @@ class Logger:
         return logger
 
 
+    @staticmethod
+    def make_tiered_logger(*args, **kwargs):
+        if len(args) != 0 or len(kwargs) != 0:
+            logger = Logger({}, *args, **kwargs)
+        else:
+            logger = Logger({}, Logger.default_print, None, True, True, True, True)
+        # bypass prohibited name checking and allow directly calling Proxy instances like a function
+        logger.__add_type(Logger.TieredTypes.DEBUG, True, True, True)
+        logger.__add_type(Logger.TieredTypes.INFO, True, True, True)
+        logger.__add_type(Logger.TieredTypes.WARN, True, True, True)
+        logger.__add_type(Logger.TieredTypes.ERROR, True, True, True)
+        return logger
+
+
     # Used by Proxy class (which blocks it from being used elsewhere)
     def generic_logger(self, message, *args, **kwargs):
         Logger.__log(message, self, "generic", *args, **kwargs)
@@ -439,12 +464,24 @@ class Logger:
         }
 
 
+    class TieredTypes:
+        DEBUG = "debug"
+        INFO = "info"
+        WARN = "warn"
+        ERROR = "error"
+
+
     # Proxy to intercept calls made to the Logger object
     # Proxy is returned when attempting to instantiate Logger and passes calls onto the "proxied" instance
     class Proxy:
 
         def __init__(self, proxied):
             self.__proxied = proxied
+
+
+        @staticmethod
+        def __make_no_op():
+            return lambda *args, **kwargs: None
 
 
         def __getattr__(self, name):
@@ -457,7 +494,7 @@ class Logger:
                 if self.__proxied.get_do_prohibited_type_exception():
                     raise LoggerExceptions.ProhibitedLoggerTypeException(f"Prohibited logger type: {name}", name)
                 else:
-                    return lambda string, *args, **kwargs: None
+                    return Logger.Proxy.__make_no_op()
 
             # If the proxied class does not have the attribute, return a default attribute
             if name not in self.__proxied.get_type_names() and not hasattr(self.__proxied, name):
@@ -470,6 +507,11 @@ class Logger:
             # If the proxied class does have the attribute, return it
             if hasattr(self.__proxied, name):
                 return getattr(self.__proxied, name)
+
+            # If the logger type is not active, do nothing
+            if not self.__proxied.get_types()[name]:
+                return Logger.Proxy.__make_no_op()
+
             return self.__proxied.get_functions()[name]
 
 
