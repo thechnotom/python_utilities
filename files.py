@@ -1,6 +1,7 @@
 import os
 import shutil
 import json
+import pathlib
 from . import logger as lg
 
 
@@ -196,3 +197,15 @@ def create_directory(directory):
         os.makedirs(directory)
         return True
     return False
+
+
+def flatten_directory(directory, destination, logger=None):
+    destination = pathlib.Path(destination)
+    path = pathlib.Path(directory)
+    for file in path.rglob("*"):
+        if file.is_file():
+            file_destination = destination / file.name
+            lg.Logger.log(f"{file} -> {file_destination}", logger, lg.Logger.TieredTypes.DEBUG)
+            lg.Logger.log(f"Copying: {file} to {file_destination}", logger, lg.Logger.TieredTypes.INFO)
+            if not copy_file(file, file_destination, logger):
+                lg.Logger.log(f"Error copying {file} to {file_destination}", logger, lg.Logger.TieredTypes.ERROR)
